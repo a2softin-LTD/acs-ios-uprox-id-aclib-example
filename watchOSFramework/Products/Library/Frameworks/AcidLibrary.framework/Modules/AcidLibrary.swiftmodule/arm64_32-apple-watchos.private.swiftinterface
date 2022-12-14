@@ -1,0 +1,302 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 5.7 (swiftlang-5.7.0.127.4 clang-1400.0.29.50)
+// swift-module-flags: -target arm64_32-apple-watchos5.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -module-name AcidLibrary
+// swift-module-flags-ignorable: -enable-bare-slash-regex
+@_exported import AcidLibrary
+import Combine
+import CoreBluetooth
+import Foundation
+import ObjectiveC
+import Swift
+import UIKit
+import _Concurrency
+import _StringProcessing
+@_hasMissingDesignatedInitializers @available(watchOS 6.0, iOS 13.0, *)
+public class LogsManager : Foundation.ObservableObject {
+  public static let shared: AcidLibrary.LogsManager
+  @Combine.Published @_projectedValueProperty($logs) public var logs: [AcidLibrary.LogModel] {
+    get
+    @available(iOS 13.0, watchOS 6.0, *)
+    set
+    @available(iOS 13.0, watchOS 6.0, *)
+    _modify
+  }
+  public var $logs: Combine.Published<[AcidLibrary.LogModel]>.Publisher {
+    get
+    @available(iOS 14.0, tvOS 14.0, watchOS 7.0, macOS 11.0, *)
+    set
+  }
+  public func writeLog(_ log: AcidLibrary.LogModel)
+  public func loadLogs()
+  public func removeLogs()
+  public typealias ObjectWillChangePublisher = Combine.ObservableObjectPublisher
+  @objc deinit
+}
+public struct LogModel : Swift.Codable, Swift.Hashable {
+  public init(message: Swift.String, date: Foundation.Date = Date(), type: AcidLibrary.LogMessageType, devices: [AcidLibrary.Device] = [])
+  public var message: Swift.String
+  public var date: Foundation.Date
+  public var type: AcidLibrary.LogMessageType
+  public var devices: [AcidLibrary.Device]
+  public func hash(into hasher: inout Swift.Hasher)
+  public static func == (a: AcidLibrary.LogModel, b: AcidLibrary.LogModel) -> Swift.Bool
+  public func encode(to encoder: Swift.Encoder) throws
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: Swift.Decoder) throws
+}
+public struct Device : Swift.Codable, Swift.Hashable {
+  public init(peripheral: CoreBluetooth.CBPeripheral)
+  public var name: Swift.String {
+    get
+  }
+  public var distance: Swift.String {
+    get
+  }
+  public var deviceType: Swift.String {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+  public static func == (a: AcidLibrary.Device, b: AcidLibrary.Device) -> Swift.Bool
+  public func encode(to encoder: Swift.Encoder) throws
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: Swift.Decoder) throws
+}
+public enum LogMessageType : Swift.Int {
+  case base
+  case warning
+  case finishScanning
+  case finishScanningAndFiltered
+  case startScanning
+  case prepareConnect
+  case startConnect
+  case finishConnect
+  case error
+  public init?(rawValue: Swift.Int)
+  public typealias RawValue = Swift.Int
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+extension AcidLibrary.LogMessageType : Swift.Codable {
+  public init(from decoder: Swift.Decoder) throws
+}
+public enum RemoteNotificationState {
+  case success(AcidLibrary.RemoteNotificationState.SuccessState)
+  case failure(AcidLibrary.RemoteNotificationState.FailureState)
+  public enum SuccessState {
+    case approved
+    case сanceled
+    public static func == (a: AcidLibrary.RemoteNotificationState.SuccessState, b: AcidLibrary.RemoteNotificationState.SuccessState) -> Swift.Bool
+    public func hash(into hasher: inout Swift.Hasher)
+    public var hashValue: Swift.Int {
+      get
+    }
+  }
+  public enum FailureState {
+    case incorrectFormat
+    case error(Swift.String?)
+  }
+}
+public struct RemoteNotification {
+  public init(token: Swift.String? = nil)
+  public init(config: AcidLibrary.NetworkServiceConfig)
+  public mutating func receive(_ payload: [Swift.AnyHashable : Any], completion: @escaping (AcidLibrary.RemoteNotificationState) -> Swift.Void)
+}
+public struct AccessKey : Swift.Hashable {
+  public var displayedName: Swift.String {
+    get
+    set
+  }
+  public var displayedEntryTime: Swift.String? {
+    get
+  }
+  public var displayedExitTime: Swift.String? {
+    get
+  }
+  public var isKeyExpired: Swift.Bool {
+    get
+  }
+  public var isKeySelected: Swift.Bool {
+    get
+  }
+  public func displayedFormatedEntryTime(format: Swift.String) -> Swift.String?
+  public func displayedFormatedExitTime(format: Swift.String) -> Swift.String?
+  public func hash(into hasher: inout Swift.Hasher)
+  public static func == (a: AcidLibrary.AccessKey, b: AcidLibrary.AccessKey) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public struct AccessKeysService {
+  public init()
+  public func mockAccessKeys(completion: @escaping ([AcidLibrary.AccessKey]) -> Swift.Void)
+  public func getKeys(completion: @escaping ([AcidLibrary.AccessKey]) -> Swift.Void)
+  public func removeAccessKey(_ key: AcidLibrary.AccessKey, completion: @escaping ([AcidLibrary.AccessKey]) -> Swift.Void)
+  public func setDefaultAccessKey(_ key: AcidLibrary.AccessKey, completion: @escaping ([AcidLibrary.AccessKey]) -> Swift.Void)
+  public func updateAccessKeyName(_ key: AcidLibrary.AccessKey, completion: @escaping ([AcidLibrary.AccessKey]) -> Swift.Void)
+}
+public enum RequestKeyFromDesktopReaderResult {
+  case success
+  case rejected
+  case keyTypeAlreadyExists
+  case noKeyLeft
+  case noMasterCard
+  case unknown
+  case bluetoothPowerOff
+  public static func == (a: AcidLibrary.RequestKeyFromDesktopReaderResult, b: AcidLibrary.RequestKeyFromDesktopReaderResult) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public enum RequestAccessResult : Swift.Int {
+  case error
+  case noAccessKeyForReader
+  case accepted
+  case granted
+  case denied
+  case unidentified
+  case bluetoothPowerOff
+  public init?(rawValue: Swift.Int)
+  public typealias RawValue = Swift.Int
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+public enum BluetoothServiceTaskMethod {
+  case defaultMethod
+  case backgroundMethod
+  public static func == (a: AcidLibrary.BluetoothServiceTaskMethod, b: AcidLibrary.BluetoothServiceTaskMethod) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public struct BluetoothService {
+  public init()
+  public var sensitivity: Swift.Double {
+    get
+    set
+  }
+  public var scanningTimeout: AcidLibrary.BluetoothServiceScanningTimeoutType {
+    get
+    set
+  }
+  public var isLogsEnabled: Swift.Bool {
+    get
+    set
+  }
+  public func requestKeyFromDesktopReader(completion: @escaping (AcidLibrary.RequestKeyFromDesktopReaderResult) -> Swift.Void)
+  public func requestAccess(method: AcidLibrary.BluetoothServiceTaskMethod = .defaultMethod, completion: @escaping (AcidLibrary.RequestAccessResult) -> Swift.Void)
+}
+public enum BluetoothServiceScanningTimeoutType : Swift.Double, Swift.CaseIterable, Swift.CustomStringConvertible {
+  case quick
+  case normal
+  case slow
+  public init?(selected: Swift.Int)
+  public init?(rawValue: Swift.Double)
+  public var selecting: Swift.Int {
+    get
+  }
+  public var description: Swift.String {
+    get
+  }
+  public typealias AllCases = [AcidLibrary.BluetoothServiceScanningTimeoutType]
+  public typealias RawValue = Swift.Double
+  public static var allCases: [AcidLibrary.BluetoothServiceScanningTimeoutType] {
+    get
+  }
+  public var rawValue: Swift.Double {
+    get
+  }
+}
+extension AcidLibrary.BluetoothServiceScanningTimeoutType : Swift.Codable {
+  public init(from decoder: Swift.Decoder) throws
+}
+public struct MobileAccessKey : Swift.Codable, Swift.Equatable {
+  public static func == (lhs: AcidLibrary.MobileAccessKey, rhs: AcidLibrary.MobileAccessKey) -> Swift.Bool
+  public func encode(to encoder: Swift.Encoder) throws
+  public init(from decoder: Swift.Decoder) throws
+}
+public protocol BluetoothWorkerDelegate : AnyObject {
+  func receiveBluetoothState(_ state: CoreBluetooth.CBManagerState)
+}
+public protocol BluetoothWorkerProtocol {
+  var delegate: AcidLibrary.BluetoothWorkerDelegate? { get set }
+  func runTask(_ task: AcidLibrary.CurrentTaskProtocol, timeout: Swift.Double, maxDistance: Swift.Double) -> Swift.Bool
+}
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc final public class BluetoothWorker : ObjectiveC.NSObject, AcidLibrary.BluetoothWorkerProtocol {
+  @objc public static let shared: AcidLibrary.BluetoothWorker
+  weak final public var delegate: AcidLibrary.BluetoothWorkerDelegate?
+  final public var isEnabled: Swift.Bool {
+    get
+  }
+  final public func runTask(_ task: AcidLibrary.CurrentTaskProtocol, timeout: Swift.Double, maxDistance: Swift.Double) -> Swift.Bool
+  @objc final public func connectPeripheral(_ peripheral: CoreBluetooth.CBPeripheral)
+  @objc final public func disconnectPeripheral(_ peripheral: CoreBluetooth.CBPeripheral)
+  @objc deinit
+}
+extension AcidLibrary.BluetoothWorker : CoreBluetooth.CBCentralManagerDelegate, CoreBluetooth.CBPeripheralDelegate {
+  @objc final public func centralManagerDidUpdateState(_ central: CoreBluetooth.CBCentralManager)
+  @objc final public func centralManager(_ central: CoreBluetooth.CBCentralManager, didDiscover peripheral: CoreBluetooth.CBPeripheral, advertisementData: [Swift.String : Any], rssi RSSI: Foundation.NSNumber)
+  @objc final public func centralManager(_ central: CoreBluetooth.CBCentralManager, didConnect peripheral: CoreBluetooth.CBPeripheral)
+}
+public enum RequestKeyFromServerResult {
+  case success
+  case rejected
+  case keyTypeAlreadyExists
+  case unknown(Swift.String)
+}
+public struct NetworkServiceConfig {
+  public init(token: Swift.String? = nil, baseTimeKeyServerUrl: Swift.String, basePermanentKeyServerUrl: Swift.String, applicationName: Swift.String)
+}
+public class NetworkService {
+  public init(token: Swift.String? = nil)
+  public init(config: AcidLibrary.NetworkServiceConfig)
+  public func sendCodeToGetAnAccessKey(_ code: Swift.String, completion: @escaping (AcidLibrary.RequestKeyFromServerResult) -> Swift.Void)
+  @objc deinit
+}
+public protocol CurrentTaskProtocol : AnyObject {
+  func hasConnectedConnectionWithPerID(_ perID: Swift.String) -> Swift.Bool
+  func hasConnectedConnection() -> Swift.Bool
+  func methodAcceptPeripheral(_ per: CoreBluetooth.CBPeripheral, maxDistance: Swift.Double) -> Swift.Bool
+  func methodSetStart()
+  func methodFinishWithNoScanResult()
+  func methodFaultWithError(_ error: Foundation.NSError)
+  func methodProcessToStartConnection(_ per: CoreBluetooth.CBPeripheral, completion: () -> Swift.Void)
+  func methodTryToRestart()
+  func methodFinishDisabledBluetooth()
+  func isRunningService() -> Swift.Bool
+}
+public enum DynamicLinksState {
+  case approving
+  case failure(AcidLibrary.DynamicLinksState.FailureState)
+  public enum FailureState {
+    case incorrectFormat
+    case error(Swift.String?)
+  }
+}
+public struct DynamicLinksService {
+  public init(token: Swift.String? = nil)
+  public init(config: AcidLibrary.NetworkServiceConfig)
+  public mutating func receive(_ url: Foundation.URL?, completion: @escaping (AcidLibrary.DynamicLinksState) -> Swift.Void)
+}
+extension AcidLibrary.LogMessageType : Swift.Equatable {}
+extension AcidLibrary.LogMessageType : Swift.Hashable {}
+extension AcidLibrary.LogMessageType : Swift.RawRepresentable {}
+extension AcidLibrary.RemoteNotificationState.SuccessState : Swift.Equatable {}
+extension AcidLibrary.RemoteNotificationState.SuccessState : Swift.Hashable {}
+extension AcidLibrary.RequestKeyFromDesktopReaderResult : Swift.Equatable {}
+extension AcidLibrary.RequestKeyFromDesktopReaderResult : Swift.Hashable {}
+extension AcidLibrary.RequestAccessResult : Swift.Equatable {}
+extension AcidLibrary.RequestAccessResult : Swift.Hashable {}
+extension AcidLibrary.RequestAccessResult : Swift.RawRepresentable {}
+extension AcidLibrary.BluetoothServiceTaskMethod : Swift.Equatable {}
+extension AcidLibrary.BluetoothServiceTaskMethod : Swift.Hashable {}
+extension AcidLibrary.BluetoothServiceScanningTimeoutType : Swift.Equatable {}
+extension AcidLibrary.BluetoothServiceScanningTimeoutType : Swift.Hashable {}
+extension AcidLibrary.BluetoothServiceScanningTimeoutType : Swift.RawRepresentable {}
