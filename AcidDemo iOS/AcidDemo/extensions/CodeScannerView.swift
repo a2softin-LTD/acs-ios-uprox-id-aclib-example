@@ -119,7 +119,7 @@ public struct CodeScannerView: UIViewControllerRepresentable {
             super.viewWillAppear(animated)
 
             if (captureSession?.isRunning == false) {
-                DispatchQueue.main.async {
+                DispatchQueue.global().async {
                     self.captureSession.startRunning()
                 }
             }
