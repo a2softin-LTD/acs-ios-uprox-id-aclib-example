@@ -7,8 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-
-#import "CommandProtocol.h"
+#import <u_prox_id_lib/CommandProtocol.h>
 
 @protocol IssueCommandDelegate;
 

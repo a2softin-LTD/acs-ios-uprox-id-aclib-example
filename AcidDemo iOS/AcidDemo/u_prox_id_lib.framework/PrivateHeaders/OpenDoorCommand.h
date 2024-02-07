@@ -7,8 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "PiuBanch.h"
-#import "CommandProtocol.h"
+#import <u_prox_id_lib/CommandProtocol.h>
 
 @protocol OpenDoorCommandDelegate;
 
@@ -16,16 +15,16 @@
 
 
 - (instancetype _Nonnull)initWithAccessId:(NSString * _Nonnull)theAccessIdStr
-                              withKeyType:(PiuType)theKeyType
+                           withCompanyKey:(BOOL)isCompany
                            withConnection:(ACIDBLEConnection * _Nonnull)theConnection
                              withDelegate:(id<OpenDoorCommandDelegate> _Nonnull)theDelegate
                               withTimeout:(double)theSeconds;
 
 - (instancetype _Nonnull)initWithCompanyAccessIds:(NSArray<NSString * > * _Nonnull)theAccessIdsStr
-                              withKeyType:(PiuType)theKeyType
-                           withConnection:(ACIDBLEConnection * _Nonnull)theConnection
-                             withDelegate:(id<OpenDoorCommandDelegate> _Nonnull)theDelegate
-                              withTimeout:(double)theSeconds;
+                                   withCompanyKey:(BOOL)isCompany
+                                   withConnection:(ACIDBLEConnection * _Nonnull)theConnection
+                                     withDelegate:(id<OpenDoorCommandDelegate> _Nonnull)theDelegate
+                                      withTimeout:(double)theSeconds;
 
 @end
 

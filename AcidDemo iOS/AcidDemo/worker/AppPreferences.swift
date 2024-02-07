@@ -18,4 +18,7 @@ struct AppPreferences {
 
   @Storage(key: "Hands Free Mode", defaultValue: false, shared: .base)
   static var handsFreeMode: Bool
+    
+  @Storage(key: "PowerCorrection.key", defaultValue: 0.8, shared: .base)
+  static var powerCorrection: Double
 }

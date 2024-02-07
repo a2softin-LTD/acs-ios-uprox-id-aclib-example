@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <CoreBluetooth/CoreBluetooth.h>
-#import <AcidLibrary/CommandProtocol.h>
+#import <u_prox_id_lib/CommandProtocol.h>
 
 @class OpenPermission;
 

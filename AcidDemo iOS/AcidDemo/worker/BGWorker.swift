@@ -6,40 +6,44 @@
 //  Copyright © 2020 Yevhen Khyzhniak. All rights reserved.
 //
 
-import AcidLibrary
+import u_prox_id_lib
 import CoreLocation
 import Foundation
 import UIKit
 
-/// Для работи режима "свободные руки"
-/// 1. Необходимо подписаться под нотификации в методе - startMonitoringBeaconsRegion
-/// 2. Когда телефон находится в зоне действия маяков, запускать скан эфира - startRangingBeacons
-/// Когда телефон будет в зона действия маяков - будет обратный вызов в методах:
-/// locationManager(_ manager: CLLocationManager, didDetermineState state: CLRegionState, for region: CLRegion) , где CLRegionState - INSIDE
-/// или
-/// locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion)
-/// так же нужно стопать процесс поиска маяков - stopRangingBeacons, когда система сделает обратный вызов в методах:
-/// locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion)
-/// или
-/// locationManager(_ manager: CLLocationManager, didDetermineState state: CLRegionState, for region: CLRegion), где CLRegionState - OUTSIDE
 
-/// Для работи режима "по вкл экрана"
-/// 1. Нужна Дарвин подписка на Экран (ВКЛ/ВЫКЛ)
-/// 2. И "толчок" в виде startMonitoringBeaconsRegion - для того, чтобы CBCentralManager начал искать периферию в background режиме
+final class BackgroundOpenDoorService {
+    
+    @Storage(key: "BackgroundOpenDoorService.Key", defaultValue: false, shared: .base)
+    private static var onStarted: Bool
+    
+    static func onRefresh() {
+        guard !Self.onStarted else { return }
+        if AppPreferences.handsFreeMode || AppPreferences.turnByScreenMode {
+            AppBLEBackgroundWorker.shared.startMonitoring()
+            Self.onStarted = true
+        }
+    }
+    
+    static func onStart() {
+        Self.onStarted = false
+        Self.onRefresh()
+    }
+}
 
-final class BgAccessRequestTask: NSObject {
+fileprivate final class AppBLEBackgroundWorker: NSObject {
 
   //MARK: - Private Enum
 
   private enum BgAccessRequestTaskType {
-    case handsFree
-    case onTurnOnScreen
-    case disabledAll
+    case handsFree  // увімкнено режим вільні руки
+    case onTurnOnScreen  // увімкнено режим по вкл екрану
+    case disabledAll  // вимкнено все
   }
 
   //MARK: - Singleton
 
-  public static let shared = BgAccessRequestTask()
+  public static let shared = AppBLEBackgroundWorker()
 
   //MARK: - Private Constants
 
@@ -48,22 +52,29 @@ final class BgAccessRequestTask: NSObject {
 
   //MARK: - Private Properties
 
-  private lazy var locationManager: CLLocationManager = CLLocationManager()
-  private let requestTask = BluetoothService.init()
+  private var bleService: BluetoothService
   private let bgTask: BackgroundTask = .init()
-  private var regions: [CLBeaconRegion] = []
+  private var keysService: AccessKeysService
+  private lazy var locationManager: CLLocationManager = CLLocationManager()
+  private lazy var regions: [CLBeaconRegion] = []
 
-  private var lastTypeCLProximity: CLProximity?
-  private var handsFreeCommandInProcess: Bool = false
+  //private var isAppWorkingInBackgroud: Bool = false  // перевірка чи додаток знаходиться в background
+  private var lastTypeCLProximity: CLProximity?  // останнє збережене значення дистанції до маячка
+  private var handsFreeCommandInProcess: Bool = false  // в процесі виконнаня команди на відкривання дверей
   private var beaconScannerWasStarted: Bool = false
 
   //MARK:  - Private Init
 
   private override init() {
+    self.bleService = .init()
+    self.keysService = .init()
     super.init()
-    self.initialBeaconRegionArray()
-    self.configureLocationManager()
-    self.subscribeOnNotifications()
+      if AppPreferences.handsFreeMode || AppPreferences.turnByScreenMode {
+          self.notifyLocation()
+          self.updateBeaconRegionArray()
+          self.stopBeaconsScanner()
+          self.subscribeOnNotifications()
+      }
   }
 
   //MARK: - Private Computed Properties
@@ -85,134 +96,74 @@ final class BgAccessRequestTask: NSObject {
   }
 }
 
-extension BgAccessRequestTask {
+extension AppBLEBackgroundWorker {
 
   //MARK: - Private Methods (AcidRequestTask)
 
-  private func sendCommand() {
-    self.bgTask.registerBackgroundTask()
-    self.requestTask.requestAccess(method: .backgroundMethod) { [weak self] state in
-      switch state {
-      default:
-        switch self?.bgTaskType {
-        case .onTurnOnScreen:
-          self?.stopMonitoringBeaconsRegion()
-        case .handsFree:
-          self?.handsFreeCommandInProcess = false
-        default:
-          break
+    private func sendCommand(_ timeout: Double = 0.5) {
+        Task {
+            let selected = await self.keysService.getKeys().filter { $0.isKeySelected }
+            if selected.isEmpty {
+                self.stopBeaconsScanner()
+                self.handsFreeCommandInProcess = false
+            } else {
+                self.bgTask.registerBackgroundTask()
+                self.bleService.powerCorrection = AppPreferences.powerCorrection
+                DispatchQueue.global().asyncAfter(deadline: .now() + timeout) { [ weak self] in
+                    guard let self = self else { return }
+                    self.bleService.requestAccessBackground(keyID: selected.first!.id) { [weak self] result in
+                        guard let self = self else { return }
+                        self.bgTask.endBackgroundTask()
+                        switch self.bgTaskType {
+                        case .onTurnOnScreen:
+                          self.stopBeaconsScanner()
+                        case .handsFree:
+                          self.handsFreeCommandInProcess = false
+                        default:
+                          break
+                        }
+                    }
+                }
+            }
         }
-        self?.bgTask.endBackgroundTask()
-      }
+  }
+}
+
+extension AppBLEBackgroundWorker: CLLocationManagerDelegate {
+
+  public func locationManager(
+    _ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus
+  ) {
+    //print("status changed")
+    if status == .authorizedAlways || status == .authorizedWhenInUse {
+      //print("we got permission")
+      //self.isEnabled = true
+      self.locationManager.startMonitoringSignificantLocationChanges()
+    } else {
+      //self.isEnabled = false
+      //print("nope")
     }
   }
 }
 
-extension BgAccessRequestTask {
-
-  //MARK: - Public Methods (Core Location)
-
-  func configureLocationManager() {
-    self.locationManager.delegate = self
-    self.locationManager.requestAlwaysAuthorization()
-    self.locationManager.startUpdatingLocation()
-    self.locationManager.allowsBackgroundLocationUpdates = true
-    self.locationManager.desiredAccuracy = kCLLocationAccuracyKilometer
-    self.stopMonitoringBeaconsRegion()
-  }
-
-  //MARK: - Private Methods (Core Location)
-
-  func locationManager(_ manager: CLLocationManager, didStartMonitoringFor region: CLRegion) {
-    ///locationManager(_:didDetermineState:for:)
-    locationManager.requestState(for: region)
-  }
-
-  func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
-    self.lastTypeCLProximity = nil
-    self.startRangingBeacons()
-    self.writeLog(
-      m: "Вход в регион действия зарегистрированого iBeacon маяка", type: .prepareConnect)
-  }
-
-  func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
-    self.lastTypeCLProximity = nil
-    self.stopRangingBeacons()
-    self.writeLog(m: "Выход из региона действия зарегистрированого iBeacon маяка", type: .warning)
-  }
-}
-
-extension BgAccessRequestTask {
-
-  //MARK: - Private Methods (IBeacon)
-
-  private func startMonitoringLocationDidChanged() {
-    self.locationManager.startUpdatingLocation()
-    self.locationManager.startMonitoringSignificantLocationChanges()
-    self.startMonitoringBeaconsRegion()
-  }
-
-  /// Инициализация регионов для мониторинга
-  private func initialBeaconRegionArray() {
-    let uuid: UUID = UUID(uuidString: self.beaconRegionUUID)!
-    let clBeaconRegion: CLBeaconRegion = CLBeaconRegion(
-      beaconIdentityConstraint: CLBeaconIdentityConstraint(uuid: uuid), identifier: uuid.uuidString)
-    self.regions.append(clBeaconRegion)
-  }
-
-  /// Подписка на мониторинг входа и выход
-  private func startMonitoringBeaconsRegion() {
-    for region in regions {
-      region.notifyOnEntry = true
-      region.notifyOnExit = true
-      region.notifyEntryStateOnDisplay = true
-      locationManager.startMonitoring(for: region)
-    }
-  }
-
-  /// Запуск процеса сканирования эфира для всех регионов, на которые была подписка
-  /// Для экономии ресурса аккума телефона - метод вызывать только, когда телефон находится в зоне действия маяков (в регионе)
-  /// Результат падает в метод locationManager(_ manager: CLLocationManager, didRangeBeacons beacons: [CLBeacon], in region: CLBeaconRegion)
-  private func startRangingBeacons() {
-    for region in regions {
-      locationManager.startRangingBeacons(satisfying: CLBeaconIdentityConstraint(uuid: region.uuid))
-    }
-  }
-
-  /// Отмена всех возможных подписок в CLLocationManager
-  private func stopMonitoringBeaconsRegion() {
-    for region in self.locationManager.monitoredRegions {
-      locationManager.stopMonitoring(for: region)
-    }
-  }
-
-  /// Стоп процеса сканирования эфира для регионов, на которые была подписка
-  private func stopRangingBeacons() {
-    for region in regions {
-      locationManager.stopRangingBeacons(satisfying: CLBeaconIdentityConstraint(uuid: region.uuid))
-    }
-  }
-
-}
-
-extension BgAccessRequestTask: CLLocationManagerDelegate {
+extension AppBLEBackgroundWorker {
 
   func locationManager(
     _ manager: CLLocationManager,
     didRangeBeacons beacons: [CLBeacon],
     in region: CLBeaconRegion
   ) {
-    guard
-      self.bgTaskType == .handsFree,
-      UIApplication.shared.applicationState != .active,
-      !beacons.isEmpty
-    else {
-      self.writeLog(
-        m: "Не найдено зарегистрированных iBeacon маяков - сброс попыток", type: .warning)
+    guard self.bgTaskType == .handsFree && UIApplication.shared.applicationState != .active else {
+      return
+    }
+    // Перевірка на результат сканування, дається 5 спроб, якщо після 5ти викликів не знайдено необхідних маячків - зупиняємо сканування beacon
+    // до наступного виклику didEnterRegion
+    guard !beacons.isEmpty else {
+      //Log.write("(Hands Free Mode) No iBeacons registered found")
       self.lastTypeCLProximity = nil
       return
     }
-    self.preparationForFindingRightBeacon(beacons: beacons, region: region)
+    self.preparationForFindingRighBeacon(beacons: beacons, region: region)
   }
 
   func locationManager(
@@ -223,31 +174,34 @@ extension BgAccessRequestTask: CLLocationManagerDelegate {
     {
       switch state {
       case .inside:
-        self.writeLog(
-          m: "Находится в зоне действия зарегистрированого iBeacon маяка", type: .startConnect)
-        self.startRangingBeacons()
+        //Log.write("(Hands Free Mode) Located in the area of the registered iBeacon")
+        self.startBeaconsScanner()
       case .outside:
         self.lastTypeCLProximity = nil
-        self.writeLog(m: "Покинул зону действия зарегистрированого iBeacon маяка", type: .warning)
-        self.stopRangingBeacons()
+        //Log.write("(Hands Free Mode) Went out of the area of the registered iBeacon")
+        self.stopBeaconsScanner()
       default:
         break
       }
     }
   }
 
-  /// Предварительный фильтр для найденных маяков в регионе
-  private func preparationForFindingRightBeacon(beacons: [CLBeacon], region: CLBeaconRegion) {
+  /// Метод слугує для перевірки результату сканування ibeacons маячків
+  /// здійснюється фільтрування на валідність маячків, та сортування за дистанцією
+  /// - Parameters:
+  ///   - beacons: отриманий масив маяків від рузультату сканування
+  ///   - region: регіон для спрацювання
+  private func preparationForFindingRighBeacon(beacons: [CLBeacon], region: CLBeaconRegion) {
     if self.bgTaskType == .handsFree,
       UIApplication.shared.applicationState != .active
     {
-      if self.regions.contains(where: { $0.uuid == region.uuid }) {
+      if self.regions.contains(region) {
         let sortedBeacons =
           beacons
           .filter { $0.proximity != .unknown }
           .sorted(by: { ($0.proximity.rawValue < $1.proximity.rawValue) })
         if let findedBeacon = sortedBeacons.first {
-          self.preparationToSendAccessKeyOnHandsFreeMode(
+          self.preparingToSendAccessKeyOnHandsFreeMode(
             findedBeacon.proximity,
             rssi: findedBeacon.rssi
           )
@@ -256,23 +210,108 @@ extension BgAccessRequestTask: CLLocationManagerDelegate {
     }
   }
 
-  /// Подготовка к отправке комманды на считыватель
-  private func preparationToSendAccessKeyOnHandsFreeMode(_ distance: CLProximity, rssi: Int) {
+  /// Підготовка для відправки BLE команди до найближчого зчитувача
+  /// припускається що при знаходженні найближчого маяка - буде зчитувач з яким потрібно встановити з'єднання.
+  /// Найближчим маяком рахується той маяк, в якого значення distance == immediate.
+  /// Для першої спроби не враховується rssi значення - для збільшення проценту вдалого виконання команди.
+  /// Для наступних спроб, щоби відсіяти зайві спрацювання зчитувача, до перевірки включається значення rssi
+  /// воно повинне бути не менше -60 dbi, за такого способу наступні рази команда на BLE буде відправлятись тільки, коли телефон знаходиться впритул до зчитувача
+  /// - Parameters:
+  ///   - distance: приблизна відстань до маяка (immediate 0...2 метрів, near  2...4 метра,  far 4> метрів)
+  ///   - rssi: значення рівня потужності сигналу
+  private func preparingToSendAccessKeyOnHandsFreeMode(_ distance: CLProximity, rssi: Int) {
     if !self.handsFreeCommandInProcess {
-      if distance == .immediate && rssi > self.minimumValidRSSIValue {
+      if self.lastTypeCLProximity != .immediate
+        && distance == .immediate
+      {
         self.handsFreeCommandInProcess = true
-        self.writeLog(
-          m:
-            "Найден зарегистрированый iBeacon маяк(2 попытка c rssi/ min - \(self.minimumValidRSSIValue): дистанция - \(distance.description), rssi - \(rssi) ",
-          type: .prepareConnect)
-        self.sendCommand()
+        //Log.write(String(format: "%@ [distance - %@, rssi - %d]", "Founded iBeacon, first try", distance.description, rssi))
+        self.sendCommand(0.5)
+      } else if distance == .immediate && rssi > self.minimumValidRSSIValue {
+        self.handsFreeCommandInProcess = true
+        //Log.write(String(format: "%@ [distance - %@, min rssi - %d, rssi - %d]", "Founded iBeacon, second try", distance.description, minimumValidRSSIValue, rssi))
+        self.sendCommand(3.0)
       }
     }
     self.lastTypeCLProximity = distance
   }
 }
 
-extension BgAccessRequestTask {
+extension AppBLEBackgroundWorker {
+
+  //MARK: - Public Methods (Core Location)
+
+  /// Підписка на геолокацію
+  public func notifyLocation() {
+    self.locationManager.requestAlwaysAuthorization()
+    self.locationManager.delegate = self
+    self.locationManager.startUpdatingLocation()
+    self.locationManager.startMonitoringSignificantLocationChanges()
+    self.locationManager.allowsBackgroundLocationUpdates = true
+    self.locationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
+  }
+
+  //MARK: - Private Methods (Core Location)
+
+  func locationManager(_ manager: CLLocationManager, didStartMonitoringFor region: CLRegion) {
+    locationManager.requestState(for: region)
+  }
+
+  /// Нотифікує про вхід телефону в зону дії маяків з однаковим UUID і після запускає сканування маяків
+  /// Нотифікація відбувається і при умові покидання зони дії маяка і коли здійснили перемикання живлення маяка
+  func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
+    self.lastTypeCLProximity = nil
+    self.startBeaconsScanner()
+    //Log.write("(Hands Free Mode) Located in the area of the registered iBeacon")
+  }
+
+  /// Нотифікує про вихід телефону з зони дії маяків з однаковим UUID і після зупиняє сканування маяків
+  /// Це необхідно для зменшення споживання заряду телефону
+  /// Нотифікація відбувається тільки при умові покидання зони дії маяка, якщо вимкнути живлення маяку - ніяких нотифікацій не буде
+  func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
+    self.lastTypeCLProximity = nil
+    self.stopBeaconsScanner()
+    //Log.write("(Hands Free Mode) Went out of the area of the registered iBeacon")
+  }
+
+}
+
+extension AppBLEBackgroundWorker {
+
+  //MARK: - Private Methods (IBeacon)
+
+  /// Додавання потрібного регіону для подальшого сканування потрібних маяків
+  private func updateBeaconRegionArray() {
+    let uuid: UUID = UUID(uuidString: self.beaconRegionUUID)!
+    let clBeaconRegion: CLBeaconRegion = CLBeaconRegion(
+      proximityUUID: uuid, identifier: uuid.uuidString)
+    self.regions.append(clBeaconRegion)
+  }
+
+  /// Запуск сканування маяків та підписка на нотифікації по входу/виходу з регіону
+  private func startBeaconsScanner() {
+    guard !self.beaconScannerWasStarted else { return }
+    self.beaconScannerWasStarted = true
+    for region in regions {
+      region.notifyOnEntry = true
+      region.notifyOnExit = true
+      region.notifyEntryStateOnDisplay = true
+      locationManager.startMonitoring(for: region)
+      locationManager.startRangingBeacons(in: region)
+    }
+  }
+
+  //Зупинення сканування маяків
+  private func stopBeaconsScanner() {
+    self.beaconScannerWasStarted = false
+    for region in regions {
+      locationManager.stopRangingBeacons(in: region)
+    }
+  }
+
+}
+
+extension AppBLEBackgroundWorker {
 
   //MARK: - Private Methods (Notification Center)
 
@@ -283,12 +322,15 @@ extension BgAccessRequestTask {
 
   private func subscribeOnNotifications() {
     NotificationCenter.default.addObserver(
-      self, selector: #selector(willTerminateNotification(_:)),
-      name: UIApplication.willTerminateNotification, object: nil)
+      self, selector: #selector(applicationDidEnterBackgroundActive(_:)),
+      name: UIApplication.didEnterBackgroundNotification, object: nil)
+    NotificationCenter.default.addObserver(
+      self, selector: #selector(applicationWillEnterForegroundActive(_:)),
+      name: UIApplication.willEnterForegroundNotification, object: nil)
 
     NotificationCenter.default.addObserver(
-      self, selector: #selector(didEnterBackgroundNotification(_:)),
-      name: UIApplication.didEnterBackgroundNotification, object: nil)
+      self, selector: #selector(willTerminateNotification(_:)),
+      name: UIApplication.willTerminateNotification, object: nil)
 
     NotificationCenter.default.addObserver(
       self, selector: #selector(displayOn), name: NSNotification.Name(keyNotifDisplayOn),
@@ -298,11 +340,31 @@ extension BgAccessRequestTask {
       object: nil)
   }
 
+  @objc private func willTerminateNotification(_ notification: Notification) {
+    if self.bgTaskType == .handsFree {
+      self.startBeaconsScanner()
+        self.writeLog(m: "App will terminate notification")
+    }
+  }
+
+  @objc private func applicationDidEnterBackgroundActive(_ notification: Notification) {
+    if self.bgTaskType == .handsFree {
+      self.startBeaconsScanner()
+    }
+  }
+
+  @objc private func applicationWillEnterForegroundActive(_ notification: Notification) {
+    self.lastTypeCLProximity = nil
+    self.stopBeaconsScanner()
+  }
+
   @objc private func displayOn(_ notification: Notification) {
     switch self.bgTaskType {
     case .onTurnOnScreen:
-      self.startMonitoringBeaconsRegion()
       self.sendCommand()
+      self.startBeaconsScanner()
+    case .handsFree:
+      self.startBeaconsScanner()
     default:
       break
     }
@@ -312,31 +374,9 @@ extension BgAccessRequestTask {
     self.bgTask.endBackgroundTask()
   }
 
-  @objc private func willTerminateNotification(_ notification: Notification) {
-    self.writeLog(m: "will Terminate Notification", type: .base)
-    if self.bgTaskType == .handsFree {
-      self.startMonitoringLocationDidChanged()
-    }
+  private func writeLog(m: String) {
+      //Log.write(m)
   }
-
-  @objc private func didEnterBackgroundNotification(_ notification: Notification) {
-    self.writeLog(m: "did Enter Background Notification", type: .base)
-    if self.bgTaskType == .handsFree {
-      self.startMonitoringLocationDidChanged()
-    }
-  }
-
-}
-
-extension BgAccessRequestTask {
-
-  private func writeLog(m: String, type: LogMessageType) {
-    LogsManager.shared.writeLog(
-      .init(
-        message: m, type: type,
-        devices: []))
-  }
-
 }
 
 extension CLProximity {
@@ -348,4 +388,24 @@ extension CLProximity {
     default: return "Unknown"
     }
   }
+}
+
+
+public class BackgroundTask {
+    
+    var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    
+    public func registerBackgroundTask() {
+        DispatchQueue.global().async {
+            self.backgroundTask = UIApplication.shared.beginBackgroundTask(withName: Bundle.main.bundleIdentifier, expirationHandler: {
+                self.endBackgroundTask()
+            })
+        }
+    }
+
+    /// Ends long-running background task. Called when app comes to foreground from background
+    public func endBackgroundTask() {
+        UIApplication.shared.endBackgroundTask(backgroundTask)
+        backgroundTask = UIBackgroundTaskIdentifier.invalid
+    }
 }
