@@ -1,125 +1,122 @@
 #  AcidLibrary
 
-Библиотека для связи с периферией.
+Бібліотека для зв'язку з периферією.
 
-## Используется
-
-
-В библиотеке 1 структура и 1 класс:
-
-- struct BluetoothService, структура-оболочка для CBCentralManager, используемая для сканирования периферийных устройств, подключения и отправки команд с обратными вызовами в BluetoothServiceState.
-
-- NetworkService, класс-оболочка для NSURLSession, используется для отправки запросов на проверку «ключа доступа» на облачном сервере. Обратные вызовы в NetworkServiceState.
+## Використовується
 
 
-## Установка 
+Бібліотека містить:
+
+- struct BluetoothService, використовується для сканування периферійних пристроїв, підключення та надсилання команд зі зворотними викликами в RequestAccessResult та RequestKeyFromDesktopReaderResult.
+
+- NetworkService, клас використовується для надсилання запитів на перевірку "ключа доступу" на хмарному сервері. Зворотні виклики в RequestKeyFromServerResult.
+
+- AccessKeysService, клас використовується редагування назви "ключа доступу", видалення, зміни ключа за замовчуванням.
 
 
-1. Скопируйте AcidLibrary.framawork в свой проект.
+## Встановлення 
 
-2.  Разрешения к info.plist:
 
-    - Privacy - Location When In Use Usage Description - `необходимо для обнаружения периферии в бэкграунде`
-    - Privacy - Location Always and When In Use Usage Description - `необходимо для обнаружения периферии в бэкграунде`
+1. Скопіюйте u_prox_id_lib.framawork у свій проєкт.
+
+2.  Дозволи для info.plist:
+
+    - Privacy - Location When In Use Usage Description - `необхідно для виявлення периферії в бекграунді`
+    - Privacy - Location Always and When In Use Usage Description - `необхідно для виявлення периферії в бекграунді`
     
-    - Privacy - Bluetooth Peripheral Usage Description - `необходимо для поиска периферии`
-    - Privacy - Bluetooth Always Usage Description - `необходимо для поиска периферии (iOS 13 or later)`
+    - Privacy - Bluetooth Peripheral Usage Description - `необхідно для пошуку периферії`
+    - Privacy - Bluetooth Always Usage Description - `необхідно для пошуку периферії (iOS 13 or later)`
     
-    - Privacy - Camera Usage Description - `сканировать qr-коды`
+    - Privacy - Camera Usage Description - `сканувати qr-коди`
     
     - App Transport Security Settings - Allow Arbitrary Loads - YES
     
-3. В info.plist добавить фоновые режимы:
+3. В info.plist додати фонові режими:
 
-    - App communicates using CoreBluetooth - `используется для сканирования и подключения к периферийному устройству в фоновом режиме`
+    - App communicates using CoreBluetooth - `використовується для сканування і підключення до периферійного пристрою у фоновому режимі`
     
-    - App registers for location updates - `используются для определения расстояния до периферии в фоновом режиме`
+    - App registers for location updates - `використовуються для визначення відстані до периферії у фоновому режимі`
     
 
-### Начало работы
+### Початок роботи
 
-####  Command - зашифрованный пакет данных, который будет отправлен на периферию.
-####  AccessKey - ключ доступа, полученный от периферии или облачного сервера, необходимый для отправки команды на периферию.
+####  Command - зашифрований пакет даних, який буде надіслано на периферію.
+####  AccessKey - ключ доступу, отриманий від периферії або хмарного сервера, необхідний для надсилання команди на периферію.
 
 ##### BluetoothService
 
-Если вам нужно отправить запрос на разблокировку двери, используйте функцию `.openDoorRequest(completion: @escaping (BluetoothServiceState) -> Void)`:
+Якщо вам потрібно надіслати запит на розблокування дверей, використовуйте функцію
+ `requestAccess(
+    keyID: UUID,
+    completion: @escaping (RequestAccessResult) -> Void
+  )`
+  
+  де keyID: UUID - унікальний id ключа доступу
+  
 ```
-private let taks: BluetoothService
+private let bleService: BluetoothService
 
 init() {
-  self.taks = BluetoothService.init()
+  self.bleService = BluetoothService.init()
 }
 
-public enum BluetoothServiceTaskMethod {
-
-    case defaultMethod
-
-    case backgroundMethod
-}
-
-public func openDoorRequest(method: BluetoothServiceTaskMethod) {
-  self.taks.requestAccess { [weak self] state in
+public func openDoorRequest() {
+  self.bleService.requestAccess(keyID: "ID ключа") { [weak self] state in
     print("\(type.self)")
   }
 }
 
-// Unknown response from the reader after request.
-error
-// Key was not found to apply for the reader.
-noAccessKeyForReader
-// Request finished correctly, but reader unable to inform about success or fail.
-accepted
-// Access finished successfully, person is able to pass.
-granted
-// Access finished successfully, person is not allowed to pass.
-denied
-// Unknown key was applied to the reader.
-unidentified 
-// Bluetooth is not enabled
-bluetoothPowerOff
+Можливі варіанти відповіді: 
+
+case error // Unknown response from the reader after request.
+case noAccessKeyForReader // Key was not found to apply for the reader.
+case accepted // Request finished correctly, but reader unable to inform about success or fail.
+case granted // Access finished successfully, person is able to pass.
+case denied // Access finished successfully, person is not allowed to pass.
+case unidentified // Unknown key was applied to the reader.
+case bluetoothPowerOff // Bluetooth is not enabled
+case timeout // в деяких випадках цей стан може означати що периферія прийняла команду від додатку але відповідь не надіслала (хоча фактично дія пройшла успішно)
 
 ```
 
-Если вам нужно отправить запрос на получение AccessKey от периферии, используйте функцию `.accessKeyRequest(completion: @escaping (BluetoothServiceState) -> Void)`:
+Якщо вам потрібно надіслати запит на отримання AccessKey від периферії, використовуйте функцію `.requestKeyFromDesktopReader(
+completion: @escaping (RequestKeyFromDesktopReaderResult
+) -> Void)`
+
 ```
-private let taks: BluetoothService
+
+private let bleService: BluetoothService
 
 init() {
-  self.taks = BluetoothService.init()
+  self.bleService = BluetoothService.init()
 }
 
 public func accessKeyRequest() {
-  self.taks.requestKeyFromDesktopReader { [weak self] state in
+  self.bleService.requestKeyFromDesktopReader { [weak self] state in
     print("\(type.self)")
   }
 }
 
-// The key is successfully issued by a desktop reader.
-success
-// The key is not issued due to reject by a desktop reader.
-rejected
-// The key is not issued due this type of already exists in the application.
-keyTypeAlreadyExists
-// The key is not issued due to there is no key left in the desktop reader.
-noKeyLeft
-// The key is not issued due to master card is not on the desktop reader.
-noMasterCard
-// The key is not issued due to unknown response from a desktop reader.
-unknown
-// Bluetooth is not enabled
-bluetoothPowerOff
+Можливі варіанти відповіді:
+
+case success // The key is successfully issued by a desktop reader.
+case rejected // The key is not issued due to reject by a desktop reader.
+case keyTypeAlreadyExists // The key is not issued due this type of already exists in the application.
+case noKeyLeft // The key is not issued due to there is no key left in the desktop reader.
+case noMasterCard // The key is not issued due to master card is not on the desktop reader.
+case unknown // The key is not issued due to unknown response from a desktop reader.
+case bluetoothPowerOff // Bluetooth is not enabled
 
 ```
 
 ##### NetworkService
 
-Если вам нужно отправить запрос на активацию QR-кода на облачном сервере, используйте функцию `.sendCodeToGetAnAccessKey(
-  _ code: String, completion: @escaping (NetworkServiceState) -> Void)`:
+Якщо вам потрібно надіслати запит на активацію QR-коду на хмарному сервері, використовуйте функцію`.sendCodeToGetAnAccessKey(
+  _ code: String,
+   completion: @escaping (RequestKeyFromServerResult
+   ) -> Void)`
+   
 ```
-
-baseTimeKeyServerUrl - ваш адрес на сервер временных меток.
-basePermanentKeyServerUrl - ваш адрес на сервер постоянных меток.
 
 private let networker: NetworkService
 
@@ -127,28 +124,47 @@ init() {
   self.networker = .init()
 }
 
-init() {
-  self.networker = .init(
-      config: NetworkServiceConfig(
-          baseTimeKeyServerUrl: "https://basetimekey.com/api/",
-          basePermanentKeyServerUrl: "https://basetimekey.com/api/",
-          applicationName: "Application name"
-      )
-  )
-}
+private let baseTimeKeyServerUrl: String? = "ваша адреса на сервер тимчасових міток"
+private let basePermanentKeyServerUrl: String? = "ваша адреса на сервер постійних міток"
 
 private func sendCode(_ code: String) {
-  self.networker.sendCodeToGetAnAccessKey(code) { [weak self] state in
-    print("\(type.self)")
-  }
+    Task {
+        self.networker.setConfig(
+            .init(
+                token: AppStorage.firebaseToken, // Опціонально
+                baseTimeKeyServerUrl: baseTimeKeyServerUrl, // Опціонально
+                basePermanentKeyServerUrl: basePermanentKeyServerUrl, // Опціонально
+                applicationName: "UPROX" // назва додатку (узгодити з сапортом)
+            )
+        )
+        do {
+            let result = try await self.networker.sendCodeToGetAnAccessKey(code)
+ 
+            await MainActor.run {
+                print("\(result.self)")
+            }
+        } catch let error as AppError {
+            await MainActor.run {
+                print("\(error.self)")
+            }
+        }
+    }
 }
+
+Можливі варіанти відповіді:
+    
+case success // The key is successfully issued by a remote server.
+case rejected // The key is not issued due to reject by a remote server.
+case keyTypeAlreadyExists // The key is not issued due this type of already exists in the application.
+case unknown(AppError) // The key is not issued due to unknown response from a remote server.
 
 ```
 
 ##### AccessKeysService
 
-Если вам нужно получить весь список «AccessKey»
-используйте функцию  `.allAvailableAccessKeys(completion: @escaping ([AccessKey]) -> Void)` :
+Якщо вам потрібно отримати весь список «AccessKey»
+використовуйте функцію  `getKeys()`
+
 ```
 private var keysService: AccessKeysService
 
@@ -156,15 +172,35 @@ public init() {
   self.keysService = .init()
 }
 
-public func fetchAccessKeys() {
-  self.keysService.getKeys { [weak self] keys in
-    print(keys)
+private func actualizeAccessKeys() async {
+  let list = await self.keysService.getKeys()
+  await MainActor.run {
+      print(result)
   }
 }
 
 ```
 
-Если вам нужно изменить ключ доступа по умолчанию, чтобы открыть дверь, используйте функцию `setDefaultAccessKey(_ key: AccessKey, completion: @escaping ([AccessKey]) -> Void) `:
+Если вам нужно изменить ключ доступа по умолчанию, чтобы открыть дверь, используйте функцию `setDefaultAccessKey(_ key: AccessKey) `
+
+```
+
+private var keysService: AccessKeysService
+
+public init() {
+  self.keysService = .init()
+}
+
+private func actualizeSelectedKeyOnStorage() {
+    Task(priority: .background) {
+            await self.keysService.setDefaultAccessKey(currentKey)
+    }
+}
+
+```
+
+Если вам нужно удалить ключ доступа из списка ключей, используйте функцию `.removeAccessKey(_ key: AccessKey)`
+
 ```
 private var keysService: AccessKeysService
 
@@ -172,31 +208,20 @@ public init() {
   self.keysService = .init()
 }
 
-public func fetchAccessKeys() {
-  self.keysService.setDefaultAccessKey(key) { [weak self] updated in
-    print(updated)
-  }
+func deleteKey() {
+    Task {
+       let list = await self.keysService.removeAccessKey(key)
+       
+       await MainActor.run {
+      		print(result)
+  		}
+    }
 }
 
 ```
 
-Если вам нужно удалить ключ доступа из списка ключей, используйте функцию `.removeAccessKey(_ key: AccessKey, completion: @escaping ([AccessKey]) -> Void)`:
-```
-private var keysService: AccessKeysService
+Если вам нужно обновить отображаемое имя ключа доступа, используйте функцию `.updateAccessKeyName(_ key: AccessKey)`
 
-public init() {
-  self.keysService = .init()
-}
-
-public func removeAccessKey() {
-  self.keysService.removeAccessKey(key) { [weak self] updated in
-    print(updated)
-  }
-}
-
-```
-
-Если вам нужно обновить отображаемое имя ключа доступа, используйте функцию `.updateAccessKeyName(_ key: AccessKey, completion: @escaping ([AccessKey]) -> Void)`:
 ```
 private var keysService: AccessKeysService
 
@@ -204,10 +229,16 @@ public init() {
   self.keysService = .init()
 }
 
-public func updateDisplayedName() {
-  self.keysService.updateAccessKeyName(key) { [weak self] updated in
-    print(updated)
-  }
+public func changeKeyName(_ new: String) {
+    Task {
+        guard var key = self.getCurrentSelectedKey() else { return }
+        key.displayedName = new
+        let updatedList = await self.keysService.updateAccessKeyName(key)
+        
+        await MainActor.run {
+            print(result)
+        }
+    }
 }
 
 ```
