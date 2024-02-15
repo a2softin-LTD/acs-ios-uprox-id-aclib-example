@@ -181,7 +181,7 @@ private func actualizeAccessKeys() async {
 
 ```
 
-Если вам нужно изменить ключ доступа по умолчанию, чтобы открыть дверь, используйте функцию `setDefaultAccessKey(_ key: AccessKey) `
+Якщо потрібно призначити ключ, який буде використовуватись за замовчуванням, щоб відкрити двері (наприклад по включенню екрану), використовуйте функцію `setDefaultAccessKey(_ key: AccessKey) `
 
 ```
 
@@ -199,7 +199,8 @@ private func actualizeSelectedKeyOnStorage() {
 
 ```
 
-Если вам нужно удалить ключ доступа из списка ключей, используйте функцию `.removeAccessKey(_ key: AccessKey)`
+Якщо потрібно видалити ключ доступу зі списку ключів, використовуйте функцію `.removeAccessKey(_ key: AccessKey)`
+Увага!!! Видалення ключа - незворотня дія!!!
 
 ```
 private var keysService: AccessKeysService
@@ -220,7 +221,7 @@ func deleteKey() {
 
 ```
 
-Если вам нужно обновить отображаемое имя ключа доступа, используйте функцию `.updateAccessKeyName(_ key: AccessKey)`
+Якщо потрібно оновити назву ключа, що відображається в інетрфейсі, використовуйте функцію `.updateAccessKeyName(_ key: AccessKey)`
 
 ```
 private var keysService: AccessKeysService
