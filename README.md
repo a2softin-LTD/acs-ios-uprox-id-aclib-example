@@ -1,11 +1,45 @@
 #  AcidLibrary
 
-Бібліотека для зв'язку з периферією.
+Бібліотека для зберігання, обробки та передачі мобільних ідентифікаторів до зчитувачів (периферійних пристроїв, PD) U-PROX(tm).
 
-## Використовується
+Бібліотека дозволяє працювати з постійними, шифрованими, та  тимчасовими мобільними ідентифікаторами (ключами)
 
+**Постійні мобільні ідентифікатори**
+    Ключі, які можна завантажити в додаток на додаток в сматрфоні тільки один раз. 
+    Період життя - весь час, поки не буде видалений додаток, чи ключ з додатку, чи смартфон не вийде з ладу.
+    Ключ (в вигляді контрейнера з зашифрованими даними) можна отримати від настільного зчитувача, чи по одноразовому QR з хмарного сервера постійни мобільних ідентифікаторів.
 
-Бібліотека містить:
+**Тимчасові мобільні ідентифікатори**
+    Багаторазові мобільні ідентифікатори, можуть бути видані на певний час користувачу.
+    Тимчасові мобільні ідентифікатори мають дату початку та дату закінчення дії, а також можіть керуватися з хмарного серверу - наприклад продовжуватися строк дії чи видалятися зі смартфону користвача (відкликатися)
+    Ключ можна отримати по QR коду від серверу тимчасових мобільних міток
+        
+**Шифровані мобільні ідентифікатори**
+    Ключі з додатковим шифруванням контейнеру даних. 
+    Пароль шифрування встановлюється в настольному зчитувачі чи на хмарному сервері перед видачею ключа в користувацький додаток.
+    Ключ можна отримати як від настільного зчитувача так і по QR коду від хмарних серверів.
+
+> [!IMPORTANT]
+> Для роботи з тимчасовими мітками необхідно використовувати firebase в вашому додатку. Зв'яжіться з нами для отримання додаткової інформації та інструкцій
+
+## Призначення
+
+- Надати можливість вбудовування мобільної ідентифікації в додатки замовника
+
+- Надати прості методи для роботи з постійними, шифрованими, та  тимчасовими мобільними ідентифікаторами
+
+- Бібліотека надає всі методи для повноцінної роботи з мобільними ідентифікаторами: 
+  - Встановлення адреси сервера, на якому міститься платформа мобільних ідентифікаторів 
+  - Отримання ідентифікаторів
+  - Зберігання ідентифікаторів
+  - Обробка push команд від хмарного сервера
+  - Передача мобільних ідентифікаторів до зчитувача по 2.4 ГГц радіо (BLE) и NFC
+
+- Бібліотека містить демо додаток для швидкого старту 
+
+## Бібліотека
+
+Бібліотека містить методи:
 
 - struct BluetoothService, використовується для сканування периферійних пристроїв, підключення та надсилання команд зі зворотними викликами в RequestAccessResult та RequestKeyFromDesktopReaderResult.
 
@@ -16,13 +50,12 @@
 
 ## Встановлення 
 
-
 1. Скопіюйте u_prox_id_lib.framawork у свій проєкт.
 
 2.  Дозволи для info.plist:
 
-    - Privacy - Location When In Use Usage Description - `необхідно для виявлення периферії в бекграунді`
-    - Privacy - Location Always and When In Use Usage Description - `необхідно для виявлення периферії в бекграунді`
+    - Privacy - Location When In Use Usage Description - `необхідно для виявлення периферії у фоновому режимі`
+    - Privacy - Location Always and When In Use Usage Description - `необхідно для виявлення периферії у фоновому режимі`
     
     - Privacy - Bluetooth Peripheral Usage Description - `необхідно для пошуку периферії`
     - Privacy - Bluetooth Always Usage Description - `необхідно для пошуку периферії (iOS 13 or later)`
@@ -45,7 +78,7 @@
 
 ##### BluetoothService
 
-Якщо вам потрібно надіслати запит на розблокування дверей, використовуйте функцію
+Якщо вам потрібно надіслати запит до зчитувача на відкриття дверей, використовуйте функцію
  `requestAccess(
     keyID: UUID,
     completion: @escaping (RequestAccessResult) -> Void
@@ -68,18 +101,18 @@ public func openDoorRequest() {
 
 Можливі варіанти відповіді: 
 
-case error // Unknown response from the reader after request.
-case noAccessKeyForReader // Key was not found to apply for the reader.
-case accepted // Request finished correctly, but reader unable to inform about success or fail.
-case granted // Access finished successfully, person is able to pass.
-case denied // Access finished successfully, person is not allowed to pass.
-case unidentified // Unknown key was applied to the reader.
-case bluetoothPowerOff // Bluetooth is not enabled
-case timeout // в деяких випадках цей стан може означати що периферія прийняла команду від додатку але відповідь не надіслала (хоча фактично дія пройшла успішно)
+case error // Помилка в відповіді зчитувача (Unknown response from the reader after request.)
+case noAccessKeyForReader // Не визначено ключ для передачі зчитувачу (Key was not found to apply for the reader.)
+case accepted // Виконано успішно, зчитувач не може підтвердити результат (Request finished correctly, but reader unable to inform about success or fail.)
+case granted // Виконано успішно, доступ дозволено (Access finished successfully, person is able to pass.)
+case denied // Виконано успішно, доступ заборонено (Access finished successfully, person is not allowed to pass.)
+case unidentified // Обраний ключ не може бути опрацьований зчитувачем (Unknown key was applied to the reader.)
+case bluetoothPowerOff // Bluetooth не включено (Bluetooth is not enabled)
+case timeout // Виконано успішно, проте не отримано відповідь від зчитувача. В деяких випадках цей стан може означати що периферія прийняла команду від додатку, але відповідь не надіслала (хоча фактично дія пройшла успішно)
 
 ```
 
-Якщо вам потрібно надіслати запит на отримання AccessKey від периферії, використовуйте функцію `.requestKeyFromDesktopReader(
+Якщо вам потрібно надіслати запит на отримання ключа(AccessKey) від настільного зчитувача, використовуйте функцію `.requestKeyFromDesktopReader(
 completion: @escaping (RequestKeyFromDesktopReaderResult
 ) -> Void)`
 
@@ -99,19 +132,19 @@ public func accessKeyRequest() {
 
 Можливі варіанти відповіді:
 
-case success // The key is successfully issued by a desktop reader.
-case rejected // The key is not issued due to reject by a desktop reader.
-case keyTypeAlreadyExists // The key is not issued due this type of already exists in the application.
-case noKeyLeft // The key is not issued due to there is no key left in the desktop reader.
-case noMasterCard // The key is not issued due to master card is not on the desktop reader.
-case unknown // The key is not issued due to unknown response from a desktop reader.
-case bluetoothPowerOff // Bluetooth is not enabled
+case success // Ключ видано успішно з настільного зчитувача (The key is successfully issued by a desktop reader.)
+case rejected // Ключ не видано, настільний зчитувач відхилив запит (The key is not issued due to reject by a desktop reader.)
+case keyTypeAlreadyExists // Ключ не видано, так як ключ з таким типом вже збережено в додатку ( The key is not issued due this type of already exists in the application.)
+case noKeyLeft // Ключ не видано, настільний зчитувач не має ліцензій на ключі (The key is not issued due to there is no key left in the desktop reader.)
+case noMasterCard // Ключ не видано, відсутня майстер картка на настільному зчитувачі (The key is not issued due to master card is not on the desktop reader.)
+case unknown // Ключ не видано, відповідь від настільного зчитувача не розпізнана (The key is not issued due to unknown response from a desktop reader.)
+case bluetoothPowerOff // Bluetooth не включено (Bluetooth is not enabled)
 
 ```
 
 ##### NetworkService
 
-Якщо вам потрібно надіслати запит на активацію QR-коду на хмарному сервері, використовуйте функцію`.sendCodeToGetAnAccessKey(
+Якщо вам потрібно надіслати запит на отримання ключа по QR-коду на хмарному сервері, використовуйте функцію`.sendCodeToGetAnAccessKey(
   _ code: String,
    completion: @escaping (RequestKeyFromServerResult
    ) -> Void)`
@@ -153,10 +186,10 @@ private func sendCode(_ code: String) {
 
 Можливі варіанти відповіді:
     
-case success // The key is successfully issued by a remote server.
-case rejected // The key is not issued due to reject by a remote server.
-case keyTypeAlreadyExists // The key is not issued due this type of already exists in the application.
-case unknown(AppError) // The key is not issued due to unknown response from a remote server.
+case success // Ключ видано хмарним сервером (The key is successfully issued by a remote server.)
+case rejected //  Ключ не видано хмарним сервером (The key is not issued due to reject by a remote server.)
+case keyTypeAlreadyExists // Ключ не видано, так як ключ з таким типом вже збережено в додатку ( The key is not issued due this type of already exists in the application.)
+case unknown(AppError) // Ключ не видано хмарним сервером з-за помилки в відповіді (The key is not issued due to unknown response from a remote server.)
 
 ```
 
@@ -200,7 +233,8 @@ private func actualizeSelectedKeyOnStorage() {
 ```
 
 Якщо потрібно видалити ключ доступу зі списку ключів, використовуйте функцію `.removeAccessKey(_ key: AccessKey)`
-Увага!!! Видалення ключа - незворотня дія!!!
+> [!WARNING]
+> Увага!!! Видалення ключа - незворотня дія!!!
 
 ```
 private var keysService: AccessKeysService
@@ -221,7 +255,7 @@ func deleteKey() {
 
 ```
 
-Якщо потрібно оновити назву ключа, що відображається в інетрфейсі, використовуйте функцію `.updateAccessKeyName(_ key: AccessKey)`
+Якщо потрібно оновити назву ключа, що відображається в інтерфейсі, використовуйте функцію `.updateAccessKeyName(_ key: AccessKey)`
 
 ```
 private var keysService: AccessKeysService
