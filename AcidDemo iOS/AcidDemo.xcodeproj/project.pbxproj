@@ -13,9 +13,8 @@
 		0C07AE662488053D0056E25D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0C07AE652488053D0056E25D /* Assets.xcassets */; };
 		0C07AE692488053D0056E25D /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0C07AE682488053D0056E25D /* Preview Assets.xcassets */; };
 		0C07AE6C2488053D0056E25D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0C07AE6A2488053D0056E25D /* LaunchScreen.storyboard */; };
+		0C4374412BC55DD20043CC9F /* u_prox_id_lib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C4374402BC55DD10043CC9F /* u_prox_id_lib.framework */; };
 		0C5D247C2B736E21009AE15D /* InitialScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5D247B2B736E21009AE15D /* InitialScene.swift */; };
-		0C5D24872B737E66009AE15D /* u_prox_id_lib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C5D24852B737E61009AE15D /* u_prox_id_lib.framework */; };
-		0C5D24882B737E66009AE15D /* u_prox_id_lib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0C5D24852B737E61009AE15D /* u_prox_id_lib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		0CB58CFF25654F610093A162 /* BGWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB58CFE25654F610093A162 /* BGWorker.swift */; };
 		0CB58D3B256550010093A162 /* DisplayManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 0CB58D3A256550010093A162 /* DisplayManager.m */; };
 		0CE5F31F24890F4000F9FEBB /* View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F31924890F3F00F9FEBB /* View.swift */; };
@@ -38,7 +37,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				0C5D24882B737E66009AE15D /* u_prox_id_lib.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -65,8 +63,8 @@
 		0C07AE6B2488053D0056E25D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		0C07AE6D2488053D0056E25D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0C3039792B7265FE001AA9C3 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
+		0C4374402BC55DD10043CC9F /* u_prox_id_lib.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = u_prox_id_lib.framework; sourceTree = "<group>"; };
 		0C5D247B2B736E21009AE15D /* InitialScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitialScene.swift; sourceTree = "<group>"; };
-		0C5D24852B737E61009AE15D /* u_prox_id_lib.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = u_prox_id_lib.framework; sourceTree = "<group>"; };
 		0CB58CFE25654F610093A162 /* BGWorker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGWorker.swift; sourceTree = "<group>"; };
 		0CB58D38256550000093A162 /* AcidDemo-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "AcidDemo-Bridging-Header.h"; sourceTree = "<group>"; };
 		0CB58D39256550010093A162 /* DisplayManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DisplayManager.h; sourceTree = "<group>"; };
@@ -91,7 +89,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0C5D24872B737E66009AE15D /* u_prox_id_lib.framework in Frameworks */,
+				0C4374412BC55DD20043CC9F /* u_prox_id_lib.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -127,7 +125,7 @@
 		0C07AE5E2488053C0056E25D /* AcidDemo */ = {
 			isa = PBXGroup;
 			children = (
-				0C5D24852B737E61009AE15D /* u_prox_id_lib.framework */,
+				0C4374402BC55DD10043CC9F /* u_prox_id_lib.framework */,
 				0CE5F33D2489116700F9FEBB /* AcidDemo.entitlements */,
 				0C002DFB2624971600F803D0 /* logs */,
 				0CE5F33624890F5D00F9FEBB /* worker */,

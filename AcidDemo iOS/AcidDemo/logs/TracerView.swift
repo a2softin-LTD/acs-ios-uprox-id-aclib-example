@@ -39,7 +39,7 @@ struct TracerView: View {
                 Spacer()
                 Button("Remove logs") {
                     TraceService.removeAll()
-                    self.trace = TraceService.get()
+                    self.trace = []
                 }
                 Spacer()
                 Divider()
@@ -58,7 +58,7 @@ struct TracerView: View {
         }
         .onAppear {
             Task {
-                let result = TraceService.get()
+                let result = await TraceService.get()
                 await MainActor.run {
                     self.trace = result
                 }
@@ -83,6 +83,8 @@ struct TracerView: View {
                 networkBody
             case .app:
                 appBody
+            case .ble:
+                bleBody
             }
         }
         
@@ -159,6 +161,24 @@ struct TracerView: View {
                     .font(.footnote)
                     .padding(3)
                     .background(RoundedRectangle(cornerRadius: 4).fill(Color(UIColor.systemBlue)))
+            case .ble:
+                Text("BLE Actions")
+                    .font(.footnote)
+                    .padding(3)
+                    .background(RoundedRectangle(cornerRadius: 4).fill(Color(UIColor.systemGreen)))
+            }
+        }
+        
+        private var bleBody: some View {
+            VStack(spacing: 8) {
+                HStack {
+                    makeType
+                    Spacer(minLength: 1)
+                }
+                Text("Date: \(trace.correctedDateShort)").font(.caption2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundColor(.gray)
+                message
             }
         }
         
@@ -202,6 +222,12 @@ struct TracerView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.footnote)
                         .foregroundColor(.gray)
+                }
+            case .ble:
+                if !trace.message.isEmpty {
+                    Text(String(format: "%@", trace.message))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.footnote)
                 }
             }
         }
