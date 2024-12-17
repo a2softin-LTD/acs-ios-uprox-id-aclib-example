@@ -1,0 +1,474 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.0.2 effective-5.10 (swiftlang-6.0.2.1.2 clang-1600.0.26.4)
+// swift-module-flags: -target arm64-apple-ios13.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -Onone -enable-experimental-feature OpaqueTypeErasure -enable-bare-slash-regex -module-name u_prox_id_lib
+// swift-module-flags-ignorable: -no-verify-emitted-module-interface
+import Combine
+import CoreBluetooth
+import CoreLocation
+import Foundation
+import Swift
+import UIKit
+import _Concurrency
+import _StringProcessing
+import _SwiftConcurrencyShims
+@_exported import u_prox_id_lib
+public enum AppError : Swift.Error, Swift.Equatable, Foundation.LocalizedError {
+  case emptyHttpResponse
+  case parseResponse
+  case notConnectedToInternet
+  case lostServerConnect
+  case serverError(code: Swift.Int, message: Swift.String)
+  case apiError(code: Swift.Int, message: Swift.String)
+  case badConfig
+  case disconnectSocket
+  public static func == (a: u_prox_id_lib.AppError, b: u_prox_id_lib.AppError) -> Swift.Bool
+}
+public protocol AccessPointsSearcherDelegate : AnyObject {
+  func receiveBluetoothState(_ state: CoreBluetooth.CBManagerState)
+}
+public protocol AccessPointsSearcherProtocol {
+  var delegate: (any u_prox_id_lib.AccessPointsSearcherDelegate)? { get set }
+  func runTask(_ task: any u_prox_id_lib.CurrentTaskProtocol, isForce: Swift.Bool, powerCorrection: Swift.Double) -> Swift.Bool
+}
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc final public class AccessPointsSearcher : ObjectiveC.NSObject, u_prox_id_lib.AccessPointsSearcherProtocol {
+  @objc public static let shared: u_prox_id_lib.AccessPointsSearcher
+  weak final public var delegate: (any u_prox_id_lib.AccessPointsSearcherDelegate)?
+  final public var isEnabled: Swift.Bool {
+    get
+  }
+  final public func runTask(_ task: any u_prox_id_lib.CurrentTaskProtocol, isForce: Swift.Bool, powerCorrection: Swift.Double) -> Swift.Bool
+  @objc final public func connectPeripheral(_ peripheral: CoreBluetooth.CBPeripheral)
+  @objc final public func disconnectPeripheral(_ peripheral: CoreBluetooth.CBPeripheral)
+  @objc deinit
+}
+extension u_prox_id_lib.AccessPointsSearcher : CoreBluetooth.CBCentralManagerDelegate, CoreBluetooth.CBPeripheralDelegate {
+  @objc final public func centralManagerDidUpdateState(_ central: CoreBluetooth.CBCentralManager)
+  @objc final public func centralManager(_ central: CoreBluetooth.CBCentralManager, didDiscover peripheral: CoreBluetooth.CBPeripheral, advertisementData: [Swift.String : Any], rssi RSSI: Foundation.NSNumber)
+  @objc final public func centralManager(_ central: CoreBluetooth.CBCentralManager, didConnect peripheral: CoreBluetooth.CBPeripheral)
+}
+public enum RequestKeyFromServerResult : Swift.Equatable {
+  case success
+  case rejected
+  case keyTypeAlreadyExists
+  case unknown(u_prox_id_lib.AppError)
+  public static func == (a: u_prox_id_lib.RequestKeyFromServerResult, b: u_prox_id_lib.RequestKeyFromServerResult) -> Swift.Bool
+}
+public struct NetworkServiceConfig {
+  public init(token: Swift.String? = nil, baseTimeKeyServerUrl: Swift.String, basePermanentKeyServerUrl: Swift.String, applicationName: Swift.String)
+}
+public class NetworkService {
+  public init(token: Swift.String? = nil, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  public init(config: u_prox_id_lib.NetworkServiceConfig, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  public func setConfig(_ value: u_prox_id_lib.NetworkServiceConfig)
+  public func sendCodeToGetAnAccessKey(_ code: Swift.String) async throws -> u_prox_id_lib.RequestKeyFromServerResult
+  @objc deinit
+}
+public struct RemoteAccessUser : Swift.Codable, Swift.Hashable {
+  public let email: Swift.String
+  public var token: Swift.String {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+  public static func == (a: u_prox_id_lib.RemoteAccessUser, b: u_prox_id_lib.RemoteAccessUser) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct DisplayedAccessGroup : Swift.Codable {
+  public let name: Swift.String
+  public let description: Swift.String
+  public let groupID: Swift.Int
+  public var doors: [u_prox_id_lib.DisplayedAccessGroup.Door]
+  public var uuid: Foundation.UUID {
+    get
+  }
+  public let loginedUserEmail: Swift.String
+  public struct Door : Swift.Codable, Swift.Identifiable {
+    public var id: Foundation.UUID
+    public var name: Swift.String
+    public var isSelected: Swift.Bool
+    public let serial: Swift.String
+    public typealias ID = Foundation.UUID
+    public func encode(to encoder: any Swift.Encoder) throws
+    public init(from decoder: any Swift.Decoder) throws
+  }
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct OpenDoorResponse {
+  public let code: Swift.Int
+  public let doorSerial: Swift.String
+}
+public class RemoteAccessService {
+  public init(env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  public func resetPassword(email: Swift.String) async throws -> Swift.Bool
+  public func changePassword(code: Swift.String, password: Swift.String) async throws -> Swift.Bool
+  public func signUp(email: Swift.String) async throws
+  public func signUpFinish(email: Swift.String, password: Swift.String, token: Swift.String) async throws
+  public func login(email: Swift.String, password: Swift.String) async throws
+  public func getAccessGroupsList(user: u_prox_id_lib.RemoteAccessUser) async throws -> [u_prox_id_lib.DisplayedAccessGroup]
+  public func getAllLoginedUsers() async -> [u_prox_id_lib.RemoteAccessUser]
+  public func getLoginedUser(email: Swift.String) async -> u_prox_id_lib.RemoteAccessUser?
+  public func removeLoginedUser(user: u_prox_id_lib.RemoteAccessUser) async
+  public func getLocalAccessGroup(by id: Foundation.UUID) async -> u_prox_id_lib.DisplayedAccessGroup?
+  public func setNewSelectedDoorByGroup(by id: Foundation.UUID, door: u_prox_id_lib.DisplayedAccessGroup.Door) async
+  public func saveToLocalAccessGroups(remote groups: [u_prox_id_lib.DisplayedAccessGroup]) async
+  public func openDoor(group: u_prox_id_lib.DisplayedAccessGroup, door: u_prox_id_lib.DisplayedAccessGroup.Door) async throws -> u_prox_id_lib.OpenDoorResponse
+  @objc deinit
+}
+@_hasMissingDesignatedInitializers final public class LibEnvironment {
+  public enum DeployState : Swift.Codable {
+    case prod
+    case dev
+    public static func == (a: u_prox_id_lib.LibEnvironment.DeployState, b: u_prox_id_lib.LibEnvironment.DeployState) -> Swift.Bool
+    public func hash(into hasher: inout Swift.Hasher)
+    public func encode(to encoder: any Swift.Encoder) throws
+    public var hashValue: Swift.Int {
+      get
+    }
+    public init(from decoder: any Swift.Decoder) throws
+  }
+  public enum ServerConfig : Swift.CustomStringConvertible, Swift.Codable, Swift.CaseIterable {
+    case appstore
+    case development
+    case qa
+    public var description: Swift.String {
+      get
+    }
+    public var serverPrefix: Swift.String {
+      get
+    }
+    public var shortDescription: Swift.String {
+      get
+    }
+    public static func == (a: u_prox_id_lib.LibEnvironment.ServerConfig, b: u_prox_id_lib.LibEnvironment.ServerConfig) -> Swift.Bool
+    public func hash(into hasher: inout Swift.Hasher)
+    public typealias AllCases = [u_prox_id_lib.LibEnvironment.ServerConfig]
+    nonisolated public static var allCases: [u_prox_id_lib.LibEnvironment.ServerConfig] {
+      get
+    }
+    public func encode(to encoder: any Swift.Encoder) throws
+    public var hashValue: Swift.Int {
+      get
+    }
+    public init(from decoder: any Swift.Decoder) throws
+  }
+  @objc deinit
+}
+public protocol CurrentTaskProtocol : AnyObject {
+  func hasConnectedConnectionWithPerID(_ perID: Swift.String) -> Swift.Bool
+  func hasConnectedConnection() -> Swift.Bool
+  func methodAcceptPeripheral(_ point: u_prox_id_lib.AccessPoint) -> Swift.Bool
+  func methodSetStart()
+  func methodFinishWithNoScanResult()
+  func methodFaultWithError(_ error: Foundation.NSError)
+  func methodProcessToStartConnection(_ point: u_prox_id_lib.AccessPoint, completion: () -> Swift.Void)
+  func methodTryToRestart()
+  func isRunningService() -> Swift.Bool
+}
+public enum RemoteNotificationState {
+  case success(u_prox_id_lib.RemoteNotificationState.SuccessState)
+  case failure(u_prox_id_lib.RemoteNotificationState.FailureState)
+  public enum SuccessState {
+    case approved
+    case сanceled
+    public static func == (a: u_prox_id_lib.RemoteNotificationState.SuccessState, b: u_prox_id_lib.RemoteNotificationState.SuccessState) -> Swift.Bool
+    public func hash(into hasher: inout Swift.Hasher)
+    public var hashValue: Swift.Int {
+      get
+    }
+  }
+  public enum FailureState {
+    case incorrectFormat
+    case error(Swift.String?)
+  }
+}
+public struct RemoteNotification {
+  public init(token: Swift.String? = nil, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  public init(config: u_prox_id_lib.NetworkServiceConfig, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  public mutating func receive(_ payload: [Swift.AnyHashable : Any]) async -> u_prox_id_lib.RemoteNotificationState
+}
+public struct MigrationModel {
+  public init(name: Swift.String, mobileID: Swift.String, type: Swift.Int, dateFrom: Swift.String?, dateTill: Swift.String?, isDefault: Swift.Bool)
+}
+public struct AccessKey : Swift.Hashable, Swift.Equatable, Swift.Identifiable, Swift.Codable {
+  public static func == (lhs: u_prox_id_lib.AccessKey, rhs: u_prox_id_lib.AccessKey) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var id: Foundation.UUID
+  public var displayedName: Swift.String {
+    get
+    set
+  }
+  public var displayedEntryTime: Swift.String? {
+    get
+  }
+  public var displayedExitTime: Swift.String? {
+    get
+  }
+  public var isKeyExpired: Swift.Bool {
+    get
+  }
+  public var isKeySelected: Swift.Bool {
+    get
+  }
+  public var keyType: u_prox_id_lib.MobileAccessKeyType {
+    get
+  }
+  public var compromisedStatus: u_prox_id_lib.KeyCompromisedStatus {
+    get
+  }
+  public var extra: u_prox_id_lib.RemoteExtra? {
+    get
+  }
+  public var companyKeyID: Swift.Int? {
+    get
+  }
+  public func displayedFormatedEntryTime(format: Swift.String) -> Swift.String?
+  public func displayedFormatedExitTime(format: Swift.String) -> Swift.String?
+  public typealias ID = Foundation.UUID
+  public func encode(to encoder: any Swift.Encoder) throws
+  public var hashValue: Swift.Int {
+    get
+  }
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct AccessKeysService {
+  public init()
+  public func mockAccessKeys() -> [u_prox_id_lib.AccessKey]
+  public func getKeys() async -> [u_prox_id_lib.AccessKey]
+  public func getSelectedKey() -> u_prox_id_lib.AccessKey?
+  public func removeAccessKey(_ key: u_prox_id_lib.AccessKey) async -> [u_prox_id_lib.AccessKey]
+  public func setDefaultAccessKey(_ key: u_prox_id_lib.AccessKey) async
+  public func updateAccessKeyName(_ key: u_prox_id_lib.AccessKey) async -> [u_prox_id_lib.AccessKey]
+  public func migration(old: [u_prox_id_lib.MigrationModel]) async
+  public func migration(new: [u_prox_id_lib.AccessKey]) async
+  public func appendPersonalLegacyKey(_ id: Swift.String) async
+}
+final public class AccessKeysCompromiseChecker {
+  public init(keysService: u_prox_id_lib.AccessKeysService, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  final public func openDoorRequestDelay(keyStatus: u_prox_id_lib.KeyCompromisedStatus) -> Swift.Double
+  final public func forceCheck(env: u_prox_id_lib.LibEnvironment.ServerConfig?, device: Swift.String) async throws
+  final public func checkOnStart(env: u_prox_id_lib.LibEnvironment.ServerConfig?, device: Swift.String) async
+  @objc deinit
+}
+public struct MobileAccessKey : Swift.Codable, Swift.Equatable {
+  public static func == (lhs: u_prox_id_lib.MobileAccessKey, rhs: u_prox_id_lib.MobileAccessKey) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+extension u_prox_id_lib.MobileAccessKey {
+  public func notValidByTime() -> Swift.Bool
+  public func isExpired() -> Swift.Bool
+  public func companyKeyID() -> Swift.Int?
+}
+public struct RemoteExtra : Swift.Codable {
+  public let userEmail: Swift.String?
+  public let companyName: Swift.String?
+  public let companyID: Swift.Int?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum MobileAccessKeyType : Swift.Int, Swift.Codable {
+  case personal
+  case encrypted
+  case network
+  case company
+  case time
+  case remote
+  case customer
+  case unknown
+  public init?(rawValue: Swift.Int)
+  public typealias RawValue = Swift.Int
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+public enum KeyCompromisedStatus : Swift.Codable, Swift.Equatable {
+  case idle
+  case active(u_prox_id_lib.KeyCompromisedStatus.UnpassedWeeks)
+  case compromised(u_prox_id_lib.KeyCompromisedStatus.UnpassedWeeks)
+  case deleted
+  public enum UnpassedWeeks : Swift.Codable {
+    case zeroWeeksPassed
+    case oneWeekPassed
+    case twoWeeksPassed
+    public static func == (a: u_prox_id_lib.KeyCompromisedStatus.UnpassedWeeks, b: u_prox_id_lib.KeyCompromisedStatus.UnpassedWeeks) -> Swift.Bool
+    public func hash(into hasher: inout Swift.Hasher)
+    public func encode(to encoder: any Swift.Encoder) throws
+    public var hashValue: Swift.Int {
+      get
+    }
+    public init(from decoder: any Swift.Decoder) throws
+  }
+  public static func == (a: u_prox_id_lib.KeyCompromisedStatus, b: u_prox_id_lib.KeyCompromisedStatus) -> Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+@_hasMissingDesignatedInitializers final public class AccessPoint : Swift.Comparable {
+  public static func < (lhs: u_prox_id_lib.AccessPoint, rhs: u_prox_id_lib.AccessPoint) -> Swift.Bool
+  public static func == (lhs: u_prox_id_lib.AccessPoint, rhs: u_prox_id_lib.AccessPoint) -> Swift.Bool
+  @objc deinit
+}
+public enum DynamicLinksState : Swift.Equatable {
+  case approving
+  case failure(u_prox_id_lib.DynamicLinksState.FailureState)
+  public enum FailureState : Swift.Equatable {
+    case incorrectFormat
+    case error(u_prox_id_lib.AppError)
+    public static func == (a: u_prox_id_lib.DynamicLinksState.FailureState, b: u_prox_id_lib.DynamicLinksState.FailureState) -> Swift.Bool
+  }
+  public static func == (a: u_prox_id_lib.DynamicLinksState, b: u_prox_id_lib.DynamicLinksState) -> Swift.Bool
+}
+public struct DynamicLinksService {
+  public init(token: Swift.String? = nil, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  public init(config: u_prox_id_lib.NetworkServiceConfig, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  public mutating func receive(_ url: Foundation.URL?) async throws -> u_prox_id_lib.DynamicLinksState
+}
+public enum RequestKeyFromDesktopReaderResult {
+  case success
+  case rejected
+  case keyTypeAlreadyExists
+  case noKeyLeft
+  case noMasterCard
+  case unknown
+  case bluetoothPowerOff
+  public static func == (a: u_prox_id_lib.RequestKeyFromDesktopReaderResult, b: u_prox_id_lib.RequestKeyFromDesktopReaderResult) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public enum RequestAccessResult : Swift.Int {
+  case error
+  case noAccessKeyForReader
+  case accepted
+  case granted
+  case denied
+  case unidentified
+  case bluetoothPowerOff
+  case timeout
+  public init?(rawValue: Swift.Int)
+  public typealias RawValue = Swift.Int
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+public enum BluetoothServiceTaskMethod {
+  case defaultMethod
+  case backgroundMethod
+  public static func == (a: u_prox_id_lib.BluetoothServiceTaskMethod, b: u_prox_id_lib.BluetoothServiceTaskMethod) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public struct BluetoothService {
+  public init()
+  public var powerCorrection: Swift.Double {
+    get
+    set
+  }
+  public var isLogsEnabled: Swift.Bool {
+    get
+    set
+  }
+  public func requestKeyFromDesktopReader(completion: @escaping (u_prox_id_lib.RequestKeyFromDesktopReaderResult) -> Swift.Void)
+  public func requestAccess(keyID: Foundation.UUID, isForce: Swift.Bool = false, completion: @escaping (u_prox_id_lib.RequestAccessResult) -> Swift.Void)
+  public func requestAccessBackground(keyID: Foundation.UUID, isForce: Swift.Bool = false, completion: @escaping (u_prox_id_lib.RequestAccessResult) -> Swift.Void)
+  public func requestAccess(key: u_prox_id_lib.AccessKey, isForce: Swift.Bool = false, completion: @escaping (u_prox_id_lib.RequestAccessResult) -> Swift.Void)
+}
+@_hasMissingDesignatedInitializers public class TraceService {
+  public struct Trace : Swift.Codable, Swift.Identifiable, Swift.Comparable {
+    public static func < (lhs: u_prox_id_lib.TraceService.Trace, rhs: u_prox_id_lib.TraceService.Trace) -> Swift.Bool
+    public init(request: Foundation.URLRequest, type: u_prox_id_lib.TraceService.Trace.TraceType, startDate: Foundation.Date = Date(), endDate: Foundation.Date? = nil, message: Swift.String = "")
+    public init(type: u_prox_id_lib.TraceService.Trace.TraceType = .ble, startDate: Foundation.Date = Date(), message: u_prox_id_lib.AnalyticsActions)
+    public var id: Foundation.UUID
+    public let type: u_prox_id_lib.TraceService.Trace.TraceType
+    public var code: Swift.Int
+    public var makeFullAddress: Swift.String
+    public var host: Swift.String
+    public var method: Swift.String
+    public var port: Swift.Int
+    public var endpoint: Swift.String
+    public var queryItems: Swift.String
+    public var data: Swift.String
+    public var message: Swift.String
+    public var correctedDate: Swift.String {
+      get
+    }
+    public var correctedDateShort: Swift.String {
+      get
+    }
+    public var diffMiliseconds: Swift.Int {
+      get
+    }
+    public var makeTraceForShareList: Swift.String {
+      get
+    }
+    public enum TraceType : Swift.Int, Swift.Codable {
+      case rest
+      case webSocket
+      case app
+      case ble
+      public init?(rawValue: Swift.Int)
+      public typealias RawValue = Swift.Int
+      public var rawValue: Swift.Int {
+        get
+      }
+    }
+    public static func == (a: u_prox_id_lib.TraceService.Trace, b: u_prox_id_lib.TraceService.Trace) -> Swift.Bool
+    public typealias ID = Foundation.UUID
+    public func encode(to encoder: any Swift.Encoder) throws
+    public init(from decoder: any Swift.Decoder) throws
+  }
+  public static func add(_ t: u_prox_id_lib.TraceService.Trace)
+  public static func get() async -> [u_prox_id_lib.TraceService.Trace]
+  public static func removeAll()
+  public enum UIActions : Swift.String {
+    case onTabSettings
+    case onTabCameras
+    case onTabEvents
+    case onTabAutomations
+    case onTabUsers
+    case onTabHome
+    case onTabSignIn
+    case onTabInvite
+    public init?(rawValue: Swift.String)
+    public typealias RawValue = Swift.String
+    public var rawValue: Swift.String {
+      get
+    }
+  }
+  public static func setTracingState(_ value: Swift.Bool)
+  public static func getTracingState() -> Swift.Bool
+  @objc deinit
+}
+public enum AnalyticsActions {
+  case bluetooth(_: Swift.String)
+}
+extension u_prox_id_lib.LibEnvironment.DeployState : Swift.Equatable {}
+extension u_prox_id_lib.LibEnvironment.DeployState : Swift.Hashable {}
+extension u_prox_id_lib.LibEnvironment.ServerConfig : Swift.Equatable {}
+extension u_prox_id_lib.LibEnvironment.ServerConfig : Swift.Hashable {}
+extension u_prox_id_lib.RemoteNotificationState.SuccessState : Swift.Equatable {}
+extension u_prox_id_lib.RemoteNotificationState.SuccessState : Swift.Hashable {}
+extension u_prox_id_lib.MobileAccessKeyType : Swift.Equatable {}
+extension u_prox_id_lib.MobileAccessKeyType : Swift.Hashable {}
+extension u_prox_id_lib.MobileAccessKeyType : Swift.RawRepresentable {}
+extension u_prox_id_lib.KeyCompromisedStatus.UnpassedWeeks : Swift.Equatable {}
+extension u_prox_id_lib.KeyCompromisedStatus.UnpassedWeeks : Swift.Hashable {}
+extension u_prox_id_lib.RequestKeyFromDesktopReaderResult : Swift.Equatable {}
+extension u_prox_id_lib.RequestKeyFromDesktopReaderResult : Swift.Hashable {}
+extension u_prox_id_lib.RequestAccessResult : Swift.Equatable {}
+extension u_prox_id_lib.RequestAccessResult : Swift.Hashable {}
+extension u_prox_id_lib.RequestAccessResult : Swift.RawRepresentable {}
+extension u_prox_id_lib.BluetoothServiceTaskMethod : Swift.Equatable {}
+extension u_prox_id_lib.BluetoothServiceTaskMethod : Swift.Hashable {}
+extension u_prox_id_lib.TraceService.Trace.TraceType : Swift.Equatable {}
+extension u_prox_id_lib.TraceService.Trace.TraceType : Swift.Hashable {}
+extension u_prox_id_lib.TraceService.Trace.TraceType : Swift.RawRepresentable {}
+extension u_prox_id_lib.TraceService.UIActions : Swift.Equatable {}
+extension u_prox_id_lib.TraceService.UIActions : Swift.Hashable {}
+extension u_prox_id_lib.TraceService.UIActions : Swift.RawRepresentable {}
