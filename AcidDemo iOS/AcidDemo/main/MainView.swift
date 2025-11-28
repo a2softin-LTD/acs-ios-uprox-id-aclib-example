@@ -10,75 +10,58 @@ import SwiftUI
 
 struct MainView: View {
     
+    enum DemoTab: String, CaseIterable, Identifiable {
+        case standard = "Стандарт"
+        case manual = "Manual"
+        
+        var id: String { self.rawValue }
+    }
+    
+    @State private var selectedTab: DemoTab = .standard
+    @StateObject private var standardViewModel: MainViewModel = .init()
+    @StateObject private var manualViewModel: ManualDemoViewModel = .init()
+    
+    var body: some View {
+        VStack {
+            Picker("Demo", selection: self.$selectedTab) {
+                ForEach(DemoTab.allCases) { tab in
+                    Text(tab.rawValue).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding()
+            
+            switch self.selectedTab {
+            case .standard:
+                StandardDemoView(viewModel: self.standardViewModel)
+            case .manual:
+                ManualDemoView(viewModel: self.manualViewModel)
+            }
+        }
+    }
+}
+
+private struct StandardDemoView: View {
     enum ShowingType: Int, Identifiable {
         case openScanning = 1
         case logs = 2
         
-        var id: Int {
-            return self.rawValue
-        }
+        var id: Int { self.rawValue }
     }
     
-    @ObservedObject var viewModel: MainViewModel = .init()
-    @State var onShow: ShowingType? = nil
+    @ObservedObject var viewModel: MainViewModel
+    @State private var onShow: ShowingType? = nil
     
     var body: some View {
         ScrollView {
-            Group {
-                Section(header: Text("Settings:")) {
-                    Toggle(
-                        "Turn on display - \(self.viewModel.turnOnDisplay ? "YES" : "NO")",
-                        isOn: self.$viewModel.turnOnDisplay)
-                    
-                    Toggle(
-                        "Hands Free Mode - \(self.viewModel.handsFreeMode ? "YES" : "NO")",
-                        isOn: self.$viewModel.handsFreeMode)
-                    
-                    Text("Power correction - \(self.viewModel.powerCorrection).")
-                    Slider(
-                        value: self.$viewModel.powerCorrection, in: .init(uncheckedBounds: (lower: 0.2, upper: 1.6)))
-                }
-                
-                Section(header: Text("Keys:")) {
-                    self.accessKeysList()
-                        .padding(.vertical, 20)
-                }
-                
-                Section(header: Text("Actions:")) {
-                    Button(action: {
-                        self.viewModel.getKeyRequest()
-                    }, label: {
-                        HStack {
-                            Text("Get access key from reader").foregroundColor(.white)
-                            ProgressView().opacity(self.viewModel.inProcessGetKey ? 1.0 : 0.0)
-                        }
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 10).fill(.blue))
-                    })
-                    
-                    Button(action: {
-                        self.viewModel.openDoor()
-                    }, label: {
-                        HStack {
-                            Text("Open Door").foregroundColor(.white)
-                            ProgressView().opacity(self.viewModel.inProcessOpen ? 1.0 : 0.0)
-                        }
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 10).fill(.green))
-                    })
-                }
-                
-                Section {
-                    Button(action: {
-                        self.onShow = .openScanning
-                    }, label: {
-                        HStack {
-                            Text("Open Qr scanner").foregroundColor(.white)
-                        }
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 10).fill(.red))
-                    })
-                }
+            VStack(alignment: .leading, spacing: 16) {
+                self.settingsSection()
+                Divider()
+                self.keysSection()
+                Divider()
+                self.actionsSection()
+                Divider()
+                self.scannerSection()
             }
             .padding()
         }
@@ -86,7 +69,6 @@ struct MainView: View {
             self.logsButtonView().padding(),
             alignment: .bottomTrailing
         )
-        
         .sheet(item: self.$onShow) { item in
             switch item {
             case .openScanning:
@@ -98,18 +80,105 @@ struct MainView: View {
                 TracerView()
             }
         }
-        
         .alert(isPresented: self.$viewModel.showMessage) { () -> Alert in
             Alert(
                 title: Text("Result"),
                 message: Text(self.viewModel.message),
                 dismissButton: .cancel())
         }
-        
         .onAppear {
             self.viewModel.getAccessKeys()
         }
     }
+    
+    // MARK: - Sections
+    
+    @ViewBuilder
+    private func settingsSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Налаштування")
+                .font(.headline)
+            Toggle(
+                "Turn on display - \(self.viewModel.turnOnDisplay ? "YES" : "NO")",
+                isOn: self.$viewModel.turnOnDisplay)
+            Toggle(
+                "Hands Free Mode - \(self.viewModel.handsFreeMode ? "YES" : "NO")",
+                isOn: self.$viewModel.handsFreeMode)
+            Text("Power correction: \(String(format: "%.1f", self.viewModel.powerCorrection))")
+                .font(.subheadline)
+            Slider(
+                value: self.$viewModel.powerCorrection,
+                in: 0.2...1.6,
+                step: 0.1
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private func keysSection() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Список ключів")
+                .font(.headline)
+            if self.viewModel.keys.isEmpty {
+                Text("Ключів немає")
+            } else {
+                ForEach(Array(self.viewModel.keys.enumerated()), id: \.element) { index, key in
+                    let isSelected = self.viewModel.initialKeyIndex == index
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(key.displayedName.isEmpty ? "Без назви" : key.displayedName)
+                            Text("Тип: \(key.keyType)")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        if isSelected {
+                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                        }
+                    }
+                    .padding()
+                    .background(RoundedRectangle(cornerRadius: 8).stroke(isSelected ? Color.green : Color.gray.opacity(0.3)))
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        self.viewModel.initialKeyIndex = index
+                    }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func actionsSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Дії")
+                .font(.headline)
+            self.actionButton(
+                title: "Get access key from reader",
+                isLoading: self.viewModel.inProcessGetKey
+            ) {
+                self.viewModel.getKeyRequest()
+            }
+            self.actionButton(
+                title: "Open Door",
+                isLoading: self.viewModel.inProcessOpen
+            ) {
+                self.viewModel.openDoor()
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func scannerSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Scanner")
+                .font(.headline)
+            self.actionButton(title: "Open Qr scanner") {
+                self.onShow = .openScanning
+            }
+        }
+    }
+    
+    // MARK: - Helpers
     
     private func logsButtonView() -> some View {
         Circle()
@@ -122,31 +191,24 @@ struct MainView: View {
     }
     
     @ViewBuilder
-    private func accessKeysList() -> some View {
-        if self.viewModel.keys.isEmpty {
-            Text("Empty list of access keys")
-        } else {
-            ScrollView(.horizontal) {
-                HStack(spacing: 20) { 
-                    ForEach(Array(self.viewModel.keys.enumerated()), id: \.element) { index, key in
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(.orange)
-                            .frame(width: 200, height: 120)
-                            .overlay(Text(key.displayedName.isEmpty ? "\(key.keyType.self)" : key.displayedName))
-                            .overlay(
-                                Text("Selected")
-                                    .padding(5)
-                                    .foregroundColor(.green)
-                                    .opacity(self.viewModel.initialKeyIndex == index ? 1.0 : 0.0)
-                                , alignment: .topTrailing
-                            )
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                self.viewModel.initialKeyIndex = index
-                            }
-                    }
+    private func actionButton(
+        title: String,
+        isLoading: Bool = false,
+        isDisabled: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack {
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(.circular)
                 }
+                Text(title).foregroundColor(.white)
             }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(RoundedRectangle(cornerRadius: 10).fill(isDisabled ? Color.gray : Color.blue))
         }
+        .disabled(isDisabled || isLoading)
     }
 }

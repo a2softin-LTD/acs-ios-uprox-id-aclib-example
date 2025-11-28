@@ -29,6 +29,8 @@
 		0CE5F32F24890F5400F9FEBB /* QrScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F32D24890F5400F9FEBB /* QrScannerView.swift */; };
 		0CE5F33024890F5400F9FEBB /* ScannerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F32E24890F5400F9FEBB /* ScannerViewModel.swift */; };
 		0CE5F33924890F5D00F9FEBB /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F33724890F5D00F9FEBB /* AppPreferences.swift */; };
+		436BBECAC14A412ABCA82F35 /* ManualDemoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998734545B564AF98F5D9CC3 /* ManualDemoViewModel.swift */; };
+		477F2D8CDE994972B887BC7A /* ManualDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00748CBC34E34AB4A11CBBCF /* ManualDemoView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -56,6 +58,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		00748CBC34E34AB4A11CBBCF /* ManualDemoView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ManualDemoView.swift; sourceTree = "<group>"; };
 		0C002DFC2624973300F803D0 /* TracerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TracerView.swift; path = logs/TracerView.swift; sourceTree = "<group>"; };
 		0C07AE5C2488053C0056E25D /* AcidDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AcidDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C07AE5F2488053C0056E25D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -83,6 +86,7 @@
 		0CE5F32E24890F5400F9FEBB /* ScannerViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
 		0CE5F33724890F5D00F9FEBB /* AppPreferences.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
 		0CE5F33D2489116700F9FEBB /* AcidDemo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AcidDemo.entitlements; sourceTree = "<group>"; };
+		998734545B564AF98F5D9CC3 /* ManualDemoViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ManualDemoViewModel.swift; sourceTree = "<group>"; };
 		EADF1609105FC83CBF542D50 /* Pods_AcidDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AcidDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -171,6 +175,8 @@
 			children = (
 				0CE5F32824890F4E00F9FEBB /* MainViewModel.swift */,
 				0CE5F32924890F4E00F9FEBB /* MainView.swift */,
+				998734545B564AF98F5D9CC3 /* ManualDemoViewModel.swift */,
+				00748CBC34E34AB4A11CBBCF /* ManualDemoView.swift */,
 			);
 			path = main;
 			sourceTree = "<group>";
@@ -291,6 +297,8 @@
 				0CE5F32024890F4000F9FEBB /* LoadingButton.swift in Sources */,
 				0CE5F32B24890F4E00F9FEBB /* MainView.swift in Sources */,
 				0C07AE622488053C0056E25D /* SceneDelegate.swift in Sources */,
+				436BBECAC14A412ABCA82F35 /* ManualDemoViewModel.swift in Sources */,
+				477F2D8CDE994972B887BC7A /* ManualDemoView.swift in Sources */,
 				0CB58CFF25654F610093A162 /* BGWorker.swift in Sources */,
 				0CE5F32224890F4000F9FEBB /* ActionButton.swift in Sources */,
 				0C002DFD2624973300F803D0 /* TracerView.swift in Sources */,
@@ -461,13 +469,17 @@
 					"$(PROJECT_DIR)",
 				);
 				MARKETING_VERSION = 6808;
-				PRODUCT_BUNDLE_IDENTIFIER = org.yevhenkhyzhniak.acid;
+				PRODUCT_BUNDLE_IDENTIFIER = com.uprox.panic.button;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "AcidDemo/worker/AcidDemo-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_WORKSPACE = NO;
 			};
 			name = Debug;
@@ -502,12 +514,16 @@
 					"$(PROJECT_DIR)",
 				);
 				MARKETING_VERSION = 6808;
-				PRODUCT_BUNDLE_IDENTIFIER = org.yevhenkhyzhniak.acid;
+				PRODUCT_BUNDLE_IDENTIFIER = com.uprox.panic.button;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "AcidDemo/worker/AcidDemo-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_WORKSPACE = NO;
 			};
 			name = Release;

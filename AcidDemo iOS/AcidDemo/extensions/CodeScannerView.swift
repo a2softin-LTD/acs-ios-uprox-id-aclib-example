@@ -109,7 +109,7 @@ public struct CodeScannerView: UIViewControllerRepresentable {
             previewLayer.videoGravity = .resizeAspectFill
             view.layer.addSublayer(previewLayer)
             updateOrientation()
-            DispatchQueue.main.async {
+            DispatchQueue.global().async {
                 self.captureSession.startRunning()
             }
             

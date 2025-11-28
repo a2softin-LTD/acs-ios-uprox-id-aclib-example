@@ -18,7 +18,7 @@ final class ScannerViewModel: ObservableObject {
   private var networker: NetworkService
 
   init() {
-      self.networker = .init(env: .appstore)
+      self.networker = .init(env: .development)
   }
 
   public func handleScan(result: Result<String, CodeScannerView.ScanError>) {
@@ -54,6 +54,8 @@ final class ScannerViewModel: ObservableObject {
                       self.message = "The key is successfully issued by a remote server."
                   case .unknown(let error):
                       self.message = error.localizedDescription
+                  default:
+                      self.message = "Невідома помилка"
                   }
               }
               

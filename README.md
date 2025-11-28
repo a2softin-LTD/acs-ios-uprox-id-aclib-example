@@ -118,6 +118,34 @@ case timeout // Виконано успішно, проте не отриман�
 
 ```
 
+###### Ручний пошук зчитувача та передача ключа
+
+Метод `requestAccess` самостійно сканує периферію, підключається до найближчого зчитувача за умовами та відправляє ключ. Якщо потрібно, щоб користувач сам обрав зчитувач перед відправкою ключа, використовуйте публічні методи `discoverAccessPoints` та `connect`.
+
+1. Викликайте `discoverAccessPoints`, щоб отримати список доступних зчитувачів. У відповідь приходить масив `AccessPoint` з `identifier` та `name`, далі ви можете показати його у своєму UI.
+2. Після вибору зчитувача викличте `connect(to:key:isBackground:completion:)`, передаючи обраний `AccessPoint` та `AccessKey`. Колбек повертає той самий `RequestAccessResult`, що й `requestAccess`.
+
+```swift
+private let bleService = BluetoothService()
+private let keysService = AccessKeysService()
+
+func manualSend() async {
+  let keys = await self.keysService.getKeys()
+  guard let key = keys.first else { return } // обираємо потрібний ключ
+
+  self.bleService.powerCorrection = 1.0 // необов'язково: налаштування радіусу пошуку
+
+  self.bleService.discoverAccessPoints { points in
+    // тут можна дати користувачу обрати зчитувач з points
+    guard let point = points.first else { return }
+
+    self.bleService.connect(to: point, key: key) { result in
+      print(result) // RequestAccessResult
+    }
+  }
+}
+```
+
 Якщо вам потрібно надіслати запит на отримання ключа(AccessKey) від настільного зчитувача, використовуйте функцію `.requestKeyFromDesktopReader(
 completion: @escaping (RequestKeyFromDesktopReaderResult
 ) -> Void)`

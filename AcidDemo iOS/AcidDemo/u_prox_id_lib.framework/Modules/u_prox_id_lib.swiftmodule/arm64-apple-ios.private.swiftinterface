@@ -1,7 +1,7 @@
 // swift-interface-format-version: 1.0
-// swift-compiler-version: Apple Swift version 6.0.2 effective-5.10 (swiftlang-6.0.2.1.2 clang-1600.0.26.4)
-// swift-module-flags: -target arm64-apple-ios13.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -Onone -enable-experimental-feature OpaqueTypeErasure -enable-bare-slash-regex -module-name u_prox_id_lib
-// swift-module-flags-ignorable: -no-verify-emitted-module-interface
+// swift-compiler-version: Apple Swift version 6.2.1 effective-5.10 (swiftlang-6.2.1.4.8 clang-1700.4.4.1)
+// swift-module-flags: -target arm64-apple-ios13.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name u_prox_id_lib
+// swift-module-flags-ignorable: -no-verify-emitted-module-interface -formal-cxx-interoperability-mode=off -interface-compiler-version 6.2.1
 import Combine
 import CoreBluetooth
 import CoreLocation
@@ -20,6 +20,7 @@ public enum AppError : Swift.Error, Swift.Equatable, Foundation.LocalizedError {
   case serverError(code: Swift.Int, message: Swift.String)
   case apiError(code: Swift.Int, message: Swift.String)
   case badConfig
+  case appError(message: Swift.String)
   case disconnectSocket
   public static func == (a: u_prox_id_lib.AppError, b: u_prox_id_lib.AppError) -> Swift.Bool
 }
@@ -27,7 +28,9 @@ public protocol AccessPointsSearcherDelegate : AnyObject {
   func receiveBluetoothState(_ state: CoreBluetooth.CBManagerState)
 }
 public protocol AccessPointsSearcherProtocol {
+  #if compiler(>=5.3) && $NonescapableTypes
   var delegate: (any u_prox_id_lib.AccessPointsSearcherDelegate)? { get set }
+  #endif
   func runTask(_ task: any u_prox_id_lib.CurrentTaskProtocol, isForce: Swift.Bool, powerCorrection: Swift.Double) -> Swift.Bool
 }
 @_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @objc final public class AccessPointsSearcher : ObjectiveC.NSObject, u_prox_id_lib.AccessPointsSearcherProtocol {
@@ -36,6 +39,8 @@ public protocol AccessPointsSearcherProtocol {
   final public var isEnabled: Swift.Bool {
     get
   }
+  @discardableResult
+  final public func discoverAccessPoints(powerCorrection: Swift.Double, completion: @escaping ([u_prox_id_lib.AccessPoint]) -> Swift.Void) -> Swift.Bool
   final public func runTask(_ task: any u_prox_id_lib.CurrentTaskProtocol, isForce: Swift.Bool, powerCorrection: Swift.Double) -> Swift.Bool
   @objc final public func connectPeripheral(_ peripheral: CoreBluetooth.CBPeripheral)
   @objc final public func disconnectPeripheral(_ peripheral: CoreBluetooth.CBPeripheral)
@@ -46,6 +51,9 @@ extension u_prox_id_lib.AccessPointsSearcher : CoreBluetooth.CBCentralManagerDel
   @objc final public func centralManager(_ central: CoreBluetooth.CBCentralManager, didDiscover peripheral: CoreBluetooth.CBPeripheral, advertisementData: [Swift.String : Any], rssi RSSI: Foundation.NSNumber)
   @objc final public func centralManager(_ central: CoreBluetooth.CBCentralManager, didConnect peripheral: CoreBluetooth.CBPeripheral)
 }
+extension Foundation.Date {
+  public static func localDate() -> Foundation.Date
+}
 public enum RequestKeyFromServerResult : Swift.Equatable {
   case success
   case rejected
@@ -54,23 +62,95 @@ public enum RequestKeyFromServerResult : Swift.Equatable {
   public static func == (a: u_prox_id_lib.RequestKeyFromServerResult, b: u_prox_id_lib.RequestKeyFromServerResult) -> Swift.Bool
 }
 public struct NetworkServiceConfig {
+  #if compiler(>=5.3) && $NonescapableTypes
   public init(token: Swift.String? = nil, baseTimeKeyServerUrl: Swift.String, basePermanentKeyServerUrl: Swift.String, applicationName: Swift.String)
+  #endif
 }
 public class NetworkService {
+  #if compiler(>=5.3) && $NonescapableTypes
   public init(token: Swift.String? = nil, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
   public init(config: u_prox_id_lib.NetworkServiceConfig, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  #endif
   public func setConfig(_ value: u_prox_id_lib.NetworkServiceConfig)
   public func sendCodeToGetAnAccessKey(_ code: Swift.String) async throws -> u_prox_id_lib.RequestKeyFromServerResult
+  public func phoneTokenExchange(currentToken: Swift.String, previousToken: Swift.String) async throws -> Swift.Bool
   @objc deinit
+}
+public class RemoteAccessService {
+  #if compiler(>=5.3) && $NonescapableTypes
+  public init(env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  #endif
+  public func resetPassword(email: Swift.String) async throws -> Swift.Bool
+  public func changePassword(code: Swift.String, password: Swift.String) async throws -> Swift.Bool
+  public func signUp(email: Swift.String) async throws
+  public func signUpFinish(email: Swift.String, password: Swift.String, token: Swift.String) async throws
+  public func login(email: Swift.String, password: Swift.String) async throws
+  public func getAccessGroupsList(user: u_prox_id_lib.RemoteAccessUser) async throws -> [u_prox_id_lib.DisplayedAccessGroup]
+  public func getAllLoginedUsers() async -> [u_prox_id_lib.RemoteAccessUser]
+  #if compiler(>=5.3) && $NonescapableTypes
+  public func getLoginedUser(email: Swift.String) async -> u_prox_id_lib.RemoteAccessUser?
+  #endif
+  public func removeLoginedUser(user: u_prox_id_lib.RemoteAccessUser) async
+  #if compiler(>=5.3) && $NonescapableTypes
+  public func getLocalAccessGroup(by id: Foundation.UUID) async -> u_prox_id_lib.DisplayedAccessGroup?
+  #endif
+  public func setNewSelectedDoorByGroup(by id: Foundation.UUID, door: u_prox_id_lib.DisplayedAccessGroup.Door) async
+  public func getEmployeeDoorsInOrganization(user: u_prox_id_lib.RemoteAccessUser, selectedKey: u_prox_id_lib.AccessKey) async throws -> [u_prox_id_lib.DisplayedAccessGroup.Door]
+  public func createGuestAccess(request: u_prox_id_lib.GuestUser.Request, user: u_prox_id_lib.RemoteAccessUser, selectedKey: u_prox_id_lib.AccessKey) async throws -> Swift.String
+  public func getAllGuestUsers(user: u_prox_id_lib.RemoteAccessUser, selectedKey: u_prox_id_lib.AccessKey) async throws -> [u_prox_id_lib.GuestInfo]
+  public func deleteGuestUser(id: Swift.String, user: u_prox_id_lib.RemoteAccessUser) async throws -> Swift.Bool
+  public func resendGuestAccess(id: Swift.String, user: u_prox_id_lib.RemoteAccessUser) async throws -> Swift.Bool
+  public func makeGuestShareLink(_ operationID: Swift.String) -> Swift.String
+  public func openDoor(group: u_prox_id_lib.DisplayedAccessGroup, door: u_prox_id_lib.DisplayedAccessGroup.Door) async throws -> u_prox_id_lib.OpenDoorResponse
+  public func saveToLocalAccessGroups(remote groups: [u_prox_id_lib.DisplayedAccessGroup]) async
+  @objc deinit
+}
+public struct GuestInfo : Swift.Codable, Swift.Identifiable {
+  public var id: Foundation.UUID
+  public let name: Swift.String
+  public let doors: [u_prox_id_lib.GuestUser.Request.Door]?
+  public let userID: Swift.String
+  public let startDateStr: Swift.String
+  public let endDateStr: Swift.String
+  public let comment: Swift.String?
+  public let email: Swift.String?
+  public var isPresentEmail: Swift.Bool {
+    get
+  }
+  public var accessCounterState: (count: Swift.Int, isUnlim: Swift.Bool) {
+    get
+  }
+  public typealias ID = Foundation.UUID
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct GuestUser {
+  public struct Request : Swift.Codable {
+    #if compiler(>=5.3) && $NonescapableTypes
+    public init(organizationID: Swift.Int, name: Swift.String?, email: Swift.String?, description: Swift.String?, doors: [u_prox_id_lib.GuestUser.Request.Door]?, generateKeypadCode: Swift.Int?, supervisorID: Swift.String? = nil, passes: Swift.Int?, unlimitedPasses: Swift.Bool?, dateStart: Swift.String?, dateEnd: Swift.String?)
+    #endif
+    public var supervisorID: Swift.String?
+    public func encode(to encoder: any Swift.Encoder) throws
+    public struct Door : Swift.Codable {
+      public init(serialNumber: Swift.String, doorId: Swift.String)
+      public let serialNumber: Swift.String
+      public let doorId: Swift.String
+      public func encode(to encoder: any Swift.Encoder) throws
+      public init(from decoder: any Swift.Decoder) throws
+    }
+    public init(from decoder: any Swift.Decoder) throws
+  }
 }
 public struct RemoteAccessUser : Swift.Codable, Swift.Hashable {
   public let email: Swift.String
   public var token: Swift.String {
     get
   }
-  public func hash(into hasher: inout Swift.Hasher)
   public static func == (a: u_prox_id_lib.RemoteAccessUser, b: u_prox_id_lib.RemoteAccessUser) -> Swift.Bool
   public func encode(to encoder: any Swift.Encoder) throws
+  public func hash(into hasher: inout Swift.Hasher)
   public var hashValue: Swift.Int {
     get
   }
@@ -80,16 +160,36 @@ public struct DisplayedAccessGroup : Swift.Codable {
   public let name: Swift.String
   public let description: Swift.String
   public let groupID: Swift.Int
+  public let organizationID: Swift.Int
   public var doors: [u_prox_id_lib.DisplayedAccessGroup.Door]
   public var uuid: Foundation.UUID {
     get
   }
   public let loginedUserEmail: Swift.String
-  public struct Door : Swift.Codable, Swift.Identifiable {
+  public struct Door : Swift.Codable, Swift.Identifiable, Swift.Equatable {
+    public static func mock() -> [u_prox_id_lib.DisplayedAccessGroup.Door]
     public var id: Foundation.UUID
     public var name: Swift.String
     public var isSelected: Swift.Bool
+    public var type: u_prox_id_lib.DisplayedAccessGroup.Door.DoorType
+    public var doorID: Swift.String
     public let serial: Swift.String
+    public enum DoorType : Swift.String, Swift.Codable {
+      case A
+      case B
+      case SINGLE
+      case TURNSTILE
+      case A_WITH_TOUCH_BUTTON
+      case FLOOR
+      #if compiler(>=5.3) && $NonescapableTypes
+      public init?(rawValue: Swift.String)
+      #endif
+      public typealias RawValue = Swift.String
+      public var rawValue: Swift.String {
+        get
+      }
+    }
+    public static func == (a: u_prox_id_lib.DisplayedAccessGroup.Door, b: u_prox_id_lib.DisplayedAccessGroup.Door) -> Swift.Bool
     public typealias ID = Foundation.UUID
     public func encode(to encoder: any Swift.Encoder) throws
     public init(from decoder: any Swift.Decoder) throws
@@ -101,30 +201,13 @@ public struct OpenDoorResponse {
   public let code: Swift.Int
   public let doorSerial: Swift.String
 }
-public class RemoteAccessService {
-  public init(env: u_prox_id_lib.LibEnvironment.ServerConfig?)
-  public func resetPassword(email: Swift.String) async throws -> Swift.Bool
-  public func changePassword(code: Swift.String, password: Swift.String) async throws -> Swift.Bool
-  public func signUp(email: Swift.String) async throws
-  public func signUpFinish(email: Swift.String, password: Swift.String, token: Swift.String) async throws
-  public func login(email: Swift.String, password: Swift.String) async throws
-  public func getAccessGroupsList(user: u_prox_id_lib.RemoteAccessUser) async throws -> [u_prox_id_lib.DisplayedAccessGroup]
-  public func getAllLoginedUsers() async -> [u_prox_id_lib.RemoteAccessUser]
-  public func getLoginedUser(email: Swift.String) async -> u_prox_id_lib.RemoteAccessUser?
-  public func removeLoginedUser(user: u_prox_id_lib.RemoteAccessUser) async
-  public func getLocalAccessGroup(by id: Foundation.UUID) async -> u_prox_id_lib.DisplayedAccessGroup?
-  public func setNewSelectedDoorByGroup(by id: Foundation.UUID, door: u_prox_id_lib.DisplayedAccessGroup.Door) async
-  public func saveToLocalAccessGroups(remote groups: [u_prox_id_lib.DisplayedAccessGroup]) async
-  public func openDoor(group: u_prox_id_lib.DisplayedAccessGroup, door: u_prox_id_lib.DisplayedAccessGroup.Door) async throws -> u_prox_id_lib.OpenDoorResponse
-  @objc deinit
-}
 @_hasMissingDesignatedInitializers final public class LibEnvironment {
   public enum DeployState : Swift.Codable {
     case prod
     case dev
     public static func == (a: u_prox_id_lib.LibEnvironment.DeployState, b: u_prox_id_lib.LibEnvironment.DeployState) -> Swift.Bool
-    public func hash(into hasher: inout Swift.Hasher)
     public func encode(to encoder: any Swift.Encoder) throws
+    public func hash(into hasher: inout Swift.Hasher)
     public var hashValue: Swift.Int {
       get
     }
@@ -144,12 +227,12 @@ public class RemoteAccessService {
       get
     }
     public static func == (a: u_prox_id_lib.LibEnvironment.ServerConfig, b: u_prox_id_lib.LibEnvironment.ServerConfig) -> Swift.Bool
-    public func hash(into hasher: inout Swift.Hasher)
     public typealias AllCases = [u_prox_id_lib.LibEnvironment.ServerConfig]
     nonisolated public static var allCases: [u_prox_id_lib.LibEnvironment.ServerConfig] {
       get
     }
     public func encode(to encoder: any Swift.Encoder) throws
+    public func hash(into hasher: inout Swift.Hasher)
     public var hashValue: Swift.Int {
       get
     }
@@ -186,12 +269,18 @@ public enum RemoteNotificationState {
   }
 }
 public struct RemoteNotification {
+  #if compiler(>=5.3) && $NonescapableTypes
   public init(token: Swift.String? = nil, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
   public init(config: u_prox_id_lib.NetworkServiceConfig, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  #endif
   public mutating func receive(_ payload: [Swift.AnyHashable : Any]) async -> u_prox_id_lib.RemoteNotificationState
 }
 public struct MigrationModel {
+  #if compiler(>=5.3) && $NonescapableTypes
   public init(name: Swift.String, mobileID: Swift.String, type: Swift.Int, dateFrom: Swift.String?, dateTill: Swift.String?, isDefault: Swift.Bool)
+  #endif
 }
 public struct AccessKey : Swift.Hashable, Swift.Equatable, Swift.Identifiable, Swift.Codable {
   public static func == (lhs: u_prox_id_lib.AccessKey, rhs: u_prox_id_lib.AccessKey) -> Swift.Bool
@@ -201,12 +290,16 @@ public struct AccessKey : Swift.Hashable, Swift.Equatable, Swift.Identifiable, S
     get
     set
   }
+  #if compiler(>=5.3) && $NonescapableTypes
   public var displayedEntryTime: Swift.String? {
     get
   }
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
   public var displayedExitTime: Swift.String? {
     get
   }
+  #endif
   public var isKeyExpired: Swift.Bool {
     get
   }
@@ -219,14 +312,22 @@ public struct AccessKey : Swift.Hashable, Swift.Equatable, Swift.Identifiable, S
   public var compromisedStatus: u_prox_id_lib.KeyCompromisedStatus {
     get
   }
+  #if compiler(>=5.3) && $NonescapableTypes
   public var extra: u_prox_id_lib.RemoteExtra? {
     get
   }
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
   public var companyKeyID: Swift.Int? {
     get
   }
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
   public func displayedFormatedEntryTime(format: Swift.String) -> Swift.String?
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
   public func displayedFormatedExitTime(format: Swift.String) -> Swift.String?
+  #endif
   public typealias ID = Foundation.UUID
   public func encode(to encoder: any Swift.Encoder) throws
   public var hashValue: Swift.Int {
@@ -238,7 +339,9 @@ public struct AccessKeysService {
   public init()
   public func mockAccessKeys() -> [u_prox_id_lib.AccessKey]
   public func getKeys() async -> [u_prox_id_lib.AccessKey]
+  #if compiler(>=5.3) && $NonescapableTypes
   public func getSelectedKey() -> u_prox_id_lib.AccessKey?
+  #endif
   public func removeAccessKey(_ key: u_prox_id_lib.AccessKey) async -> [u_prox_id_lib.AccessKey]
   public func setDefaultAccessKey(_ key: u_prox_id_lib.AccessKey) async
   public func updateAccessKeyName(_ key: u_prox_id_lib.AccessKey) async -> [u_prox_id_lib.AccessKey]
@@ -247,10 +350,16 @@ public struct AccessKeysService {
   public func appendPersonalLegacyKey(_ id: Swift.String) async
 }
 final public class AccessKeysCompromiseChecker {
+  #if compiler(>=5.3) && $NonescapableTypes
   public init(keysService: u_prox_id_lib.AccessKeysService, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  #endif
   final public func openDoorRequestDelay(keyStatus: u_prox_id_lib.KeyCompromisedStatus) -> Swift.Double
+  #if compiler(>=5.3) && $NonescapableTypes
   final public func forceCheck(env: u_prox_id_lib.LibEnvironment.ServerConfig?, device: Swift.String) async throws
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
   final public func checkOnStart(env: u_prox_id_lib.LibEnvironment.ServerConfig?, device: Swift.String) async
+  #endif
   @objc deinit
 }
 public struct MobileAccessKey : Swift.Codable, Swift.Equatable {
@@ -261,12 +370,15 @@ public struct MobileAccessKey : Swift.Codable, Swift.Equatable {
 extension u_prox_id_lib.MobileAccessKey {
   public func notValidByTime() -> Swift.Bool
   public func isExpired() -> Swift.Bool
+  #if compiler(>=5.3) && $NonescapableTypes
   public func companyKeyID() -> Swift.Int?
+  #endif
 }
 public struct RemoteExtra : Swift.Codable {
   public let userEmail: Swift.String?
   public let companyName: Swift.String?
-  public let companyID: Swift.Int?
+  public let groupID: Swift.Int?
+  public let organizationID: Swift.Int?
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
@@ -279,7 +391,9 @@ public enum MobileAccessKeyType : Swift.Int, Swift.Codable {
   case remote
   case customer
   case unknown
+  #if compiler(>=5.3) && $NonescapableTypes
   public init?(rawValue: Swift.Int)
+  #endif
   public typealias RawValue = Swift.Int
   public var rawValue: Swift.Int {
     get
@@ -295,8 +409,8 @@ public enum KeyCompromisedStatus : Swift.Codable, Swift.Equatable {
     case oneWeekPassed
     case twoWeeksPassed
     public static func == (a: u_prox_id_lib.KeyCompromisedStatus.UnpassedWeeks, b: u_prox_id_lib.KeyCompromisedStatus.UnpassedWeeks) -> Swift.Bool
-    public func hash(into hasher: inout Swift.Hasher)
     public func encode(to encoder: any Swift.Encoder) throws
+    public func hash(into hasher: inout Swift.Hasher)
     public var hashValue: Swift.Int {
       get
     }
@@ -309,6 +423,12 @@ public enum KeyCompromisedStatus : Swift.Codable, Swift.Equatable {
 @_hasMissingDesignatedInitializers final public class AccessPoint : Swift.Comparable {
   public static func < (lhs: u_prox_id_lib.AccessPoint, rhs: u_prox_id_lib.AccessPoint) -> Swift.Bool
   public static func == (lhs: u_prox_id_lib.AccessPoint, rhs: u_prox_id_lib.AccessPoint) -> Swift.Bool
+  final public var identifier: Foundation.UUID {
+    get
+  }
+  final public var name: Swift.String {
+    get
+  }
   @objc deinit
 }
 public enum DynamicLinksState : Swift.Equatable {
@@ -322,9 +442,15 @@ public enum DynamicLinksState : Swift.Equatable {
   public static func == (a: u_prox_id_lib.DynamicLinksState, b: u_prox_id_lib.DynamicLinksState) -> Swift.Bool
 }
 public struct DynamicLinksService {
+  #if compiler(>=5.3) && $NonescapableTypes
   public init(token: Swift.String? = nil, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
   public init(config: u_prox_id_lib.NetworkServiceConfig, env: u_prox_id_lib.LibEnvironment.ServerConfig?)
+  #endif
+  #if compiler(>=5.3) && $NonescapableTypes
   public mutating func receive(_ url: Foundation.URL?) async throws -> u_prox_id_lib.DynamicLinksState
+  #endif
 }
 public enum RequestKeyFromDesktopReaderResult {
   case success
@@ -349,7 +475,9 @@ public enum RequestAccessResult : Swift.Int {
   case unidentified
   case bluetoothPowerOff
   case timeout
+  #if compiler(>=5.3) && $NonescapableTypes
   public init?(rawValue: Swift.Int)
+  #endif
   public typealias RawValue = Swift.Int
   public var rawValue: Swift.Int {
     get
@@ -378,12 +506,17 @@ public struct BluetoothService {
   public func requestAccess(keyID: Foundation.UUID, isForce: Swift.Bool = false, completion: @escaping (u_prox_id_lib.RequestAccessResult) -> Swift.Void)
   public func requestAccessBackground(keyID: Foundation.UUID, isForce: Swift.Bool = false, completion: @escaping (u_prox_id_lib.RequestAccessResult) -> Swift.Void)
   public func requestAccess(key: u_prox_id_lib.AccessKey, isForce: Swift.Bool = false, completion: @escaping (u_prox_id_lib.RequestAccessResult) -> Swift.Void)
+  public func discoverAccessPoints(completion: @escaping ([u_prox_id_lib.AccessPoint]) -> Swift.Void)
+  public func connect(to accessPoint: u_prox_id_lib.AccessPoint, key: u_prox_id_lib.AccessKey, isBackground: Swift.Bool = false, completion: @escaping (u_prox_id_lib.RequestAccessResult) -> Swift.Void)
 }
 @_hasMissingDesignatedInitializers public class TraceService {
   public struct Trace : Swift.Codable, Swift.Identifiable, Swift.Comparable {
     public static func < (lhs: u_prox_id_lib.TraceService.Trace, rhs: u_prox_id_lib.TraceService.Trace) -> Swift.Bool
+    #if compiler(>=5.3) && $NonescapableTypes
     public init(request: Foundation.URLRequest, type: u_prox_id_lib.TraceService.Trace.TraceType, startDate: Foundation.Date = Date(), endDate: Foundation.Date? = nil, message: Swift.String = "")
+    #endif
     public init(type: u_prox_id_lib.TraceService.Trace.TraceType = .ble, startDate: Foundation.Date = Date(), message: u_prox_id_lib.AnalyticsActions)
+    public init(type: u_prox_id_lib.TraceService.Trace.TraceType = .app, startDate: Foundation.Date = Date(), message: Swift.String)
     public var id: Foundation.UUID
     public let type: u_prox_id_lib.TraceService.Trace.TraceType
     public var code: Swift.Int
@@ -412,7 +545,9 @@ public struct BluetoothService {
       case webSocket
       case app
       case ble
+      #if compiler(>=5.3) && $NonescapableTypes
       public init?(rawValue: Swift.Int)
+      #endif
       public typealias RawValue = Swift.Int
       public var rawValue: Swift.Int {
         get
@@ -435,7 +570,9 @@ public struct BluetoothService {
     case onTabHome
     case onTabSignIn
     case onTabInvite
+    #if compiler(>=5.3) && $NonescapableTypes
     public init?(rawValue: Swift.String)
+    #endif
     public typealias RawValue = Swift.String
     public var rawValue: Swift.String {
       get
@@ -448,6 +585,9 @@ public struct BluetoothService {
 public enum AnalyticsActions {
   case bluetooth(_: Swift.String)
 }
+extension u_prox_id_lib.DisplayedAccessGroup.Door.DoorType : Swift.Equatable {}
+extension u_prox_id_lib.DisplayedAccessGroup.Door.DoorType : Swift.Hashable {}
+extension u_prox_id_lib.DisplayedAccessGroup.Door.DoorType : Swift.RawRepresentable {}
 extension u_prox_id_lib.LibEnvironment.DeployState : Swift.Equatable {}
 extension u_prox_id_lib.LibEnvironment.DeployState : Swift.Hashable {}
 extension u_prox_id_lib.LibEnvironment.ServerConfig : Swift.Equatable {}

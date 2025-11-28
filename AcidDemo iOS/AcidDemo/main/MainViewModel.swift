@@ -14,7 +14,7 @@ final class MainViewModel: ObservableObject {
     
     // MARK: - Properties
     
-    @Published private (set) var keys: [AccessKey] = []
+    @Published private(set) var keys: [AccessKey] = []
     @Published var initialKeyIndex: Int = 0
     
     @Published var powerCorrection: Double = 0.0
@@ -24,7 +24,7 @@ final class MainViewModel: ObservableObject {
     @Published var showMessage: Bool = false
     @Published var inProcessOpen: Bool = false
     @Published var inProcessGetKey: Bool = false
-    @Published private (set) var message: String = ""
+    @Published private(set) var message: String = ""
     
     // MARK: - Private Properties
     
