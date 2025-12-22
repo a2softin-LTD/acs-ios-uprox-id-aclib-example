@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0C002DFD2624973300F803D0 /* TracerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C002DFC2624973300F803D0 /* TracerView.swift */; };
 		0C07AE602488053C0056E25D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C07AE5F2488053C0056E25D /* AppDelegate.swift */; };
 		0C07AE622488053C0056E25D /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C07AE612488053C0056E25D /* SceneDelegate.swift */; };
 		0C07AE662488053D0056E25D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0C07AE652488053D0056E25D /* Assets.xcassets */; };
@@ -29,6 +28,7 @@
 		0CE5F32F24890F5400F9FEBB /* QrScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F32D24890F5400F9FEBB /* QrScannerView.swift */; };
 		0CE5F33024890F5400F9FEBB /* ScannerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F32E24890F5400F9FEBB /* ScannerViewModel.swift */; };
 		0CE5F33924890F5D00F9FEBB /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F33724890F5D00F9FEBB /* AppPreferences.swift */; };
+		0CF358EF2EF93F8A00D8D7BF /* TracerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF358EE2EF93F8A00D8D7BF /* TracerView.swift */; };
 		436BBECAC14A412ABCA82F35 /* ManualDemoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998734545B564AF98F5D9CC3 /* ManualDemoViewModel.swift */; };
 		477F2D8CDE994972B887BC7A /* ManualDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00748CBC34E34AB4A11CBBCF /* ManualDemoView.swift */; };
 /* End PBXBuildFile section */
@@ -59,7 +59,6 @@
 
 /* Begin PBXFileReference section */
 		00748CBC34E34AB4A11CBBCF /* ManualDemoView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ManualDemoView.swift; sourceTree = "<group>"; };
-		0C002DFC2624973300F803D0 /* TracerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TracerView.swift; path = logs/TracerView.swift; sourceTree = "<group>"; };
 		0C07AE5C2488053C0056E25D /* AcidDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AcidDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C07AE5F2488053C0056E25D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		0C07AE612488053C0056E25D /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -86,6 +85,7 @@
 		0CE5F32E24890F5400F9FEBB /* ScannerViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
 		0CE5F33724890F5D00F9FEBB /* AppPreferences.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
 		0CE5F33D2489116700F9FEBB /* AcidDemo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AcidDemo.entitlements; sourceTree = "<group>"; };
+		0CF358EE2EF93F8A00D8D7BF /* TracerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TracerView.swift; sourceTree = "<group>"; };
 		998734545B564AF98F5D9CC3 /* ManualDemoViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ManualDemoViewModel.swift; sourceTree = "<group>"; };
 		EADF1609105FC83CBF542D50 /* Pods_AcidDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AcidDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -105,7 +105,7 @@
 		0C002DFB2624971600F803D0 /* logs */ = {
 			isa = PBXGroup;
 			children = (
-				0C002DFC2624973300F803D0 /* TracerView.swift */,
+				0CF358EE2EF93F8A00D8D7BF /* TracerView.swift */,
 			);
 			name = logs;
 			sourceTree = "<group>";
@@ -300,8 +300,8 @@
 				436BBECAC14A412ABCA82F35 /* ManualDemoViewModel.swift in Sources */,
 				477F2D8CDE994972B887BC7A /* ManualDemoView.swift in Sources */,
 				0CB58CFF25654F610093A162 /* BGWorker.swift in Sources */,
+				0CF358EF2EF93F8A00D8D7BF /* TracerView.swift in Sources */,
 				0CE5F32224890F4000F9FEBB /* ActionButton.swift in Sources */,
-				0C002DFD2624973300F803D0 /* TracerView.swift in Sources */,
 				0C5D247C2B736E21009AE15D /* InitialScene.swift in Sources */,
 				0CB58D3B256550010093A162 /* DisplayManager.m in Sources */,
 			);
