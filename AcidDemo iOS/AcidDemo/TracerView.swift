@@ -85,6 +85,8 @@ struct TracerView: View {
                 appBody
             case .ble:
                 bleBody
+            default:
+                EmptyView()
             }
         }
         
@@ -166,6 +168,8 @@ struct TracerView: View {
                     .font(.footnote)
                     .padding(3)
                     .background(RoundedRectangle(cornerRadius: 4).fill(Color(UIColor.systemGreen)))
+            default:
+                EmptyView()
             }
         }
         
@@ -229,6 +233,8 @@ struct TracerView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.footnote)
                 }
+            default:
+                EmptyView()
             }
         }
     }

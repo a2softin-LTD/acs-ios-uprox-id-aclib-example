@@ -10,7 +10,7 @@
 //import FirebaseMessaging
 import UIKit
 
-@UIApplicationMain
+@main
 class AppDelegate: UIResponder, UIApplicationDelegate {
     
     func application(

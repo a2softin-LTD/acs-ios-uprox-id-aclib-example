@@ -7,9 +7,10 @@
 //
 
 import u_prox_id_lib
-import Combine
+@preconcurrency import Combine
 import Foundation
 
+@MainActor
 final class MainViewModel: ObservableObject {
     
     // MARK: - Properties
@@ -32,6 +33,7 @@ final class MainViewModel: ObservableObject {
     private var bag: Set<AnyCancellable> = []
     private let keysService: AccessKeysService
     
+    @MainActor
     init() {
         self.bleService = BluetoothService.init()
         self.powerCorrection = AppPreferences.powerCorrection
@@ -74,7 +76,7 @@ final class MainViewModel: ObservableObject {
     // MARK: - Public Methods
     
     public func getAccessKeys() {
-        Task {
+        Task { @MainActor in
             await self.actualizeAccessKeys()
         }
     }
@@ -84,37 +86,32 @@ final class MainViewModel: ObservableObject {
         self.inProcessOpen = true
         self.bleService.powerCorrection = self.powerCorrection
         if let key = self.getCurrentSelectedKey() {
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.bleService.requestAccess(keyID: key.id) { [weak self] result in
-                    guard let self = self else { return }
-                    DispatchQueue.main.async {
-                        self.inProcessOpen = false
-                        self.showMessage = true
-                        self.message = "\(result.self)"
-                        
-                        print(result)
-                    }
+            self.bleService.requestAccess(keyID: key.id) { [weak self] result in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.inProcessOpen = false
+                    self.showMessage = true
+                    self.message = "\(result)"
+                    print(result)
                 }
             }
+        } else {
+            self.inProcessOpen = false
         }
     }
     
     public func getKeyRequest() {
         self.inProcessGetKey = true
         
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.bleService.requestKeyFromDesktopReader { [weak self] result in
-                guard let self = self else { return }
+        self.bleService.requestKeyFromDesktopReader { [weak self] result in
+            Task { @MainActor in
+                guard let self else { return }
                 if result == .success {
-                    Task {
-                        await self.actualizeAccessKeys()
-                    }
+                    await self.actualizeAccessKeys()
                 }
-                DispatchQueue.main.async {
-                    self.inProcessGetKey = false
-                    self.showMessage = true
-                    self.message = "\(result.self)"
-                }
+                self.inProcessGetKey = false
+                self.showMessage = true
+                self.message = "\(result)"
             }
         }
     }
@@ -123,11 +120,9 @@ final class MainViewModel: ObservableObject {
     
     private func actualizeAccessKeys() async {
         let list = await self.keysService.getKeys()
-        let initialKeyIndex = await self.calculateInitialSelectedKeyIndex(list)
-        await MainActor.run {
-            self.initialKeyIndex = initialKeyIndex
-            self.keys = list
-        }
+        let initialKeyIndex = self.calculateInitialSelectedKeyIndex(list)
+        self.initialKeyIndex = initialKeyIndex
+        self.keys = list
     }
     
     private func getCurrentSelectedKey() -> AccessKey? {
@@ -138,12 +133,13 @@ final class MainViewModel: ObservableObject {
     
     private func actualizeSelectedKeyOnStorage() {
         guard let currentKey = self.getCurrentSelectedKey() else { return }
-        Task(priority: .background) {
-            await self.keysService.setDefaultAccessKey(currentKey)
+        let keysService = self.keysService
+        Task.detached(priority: .background) {
+            await keysService.setDefaultAccessKey(currentKey)
         }
     }
     
-    private func calculateInitialSelectedKeyIndex(_ list: [AccessKey]) async -> Int {
+    private func calculateInitialSelectedKeyIndex(_ list: [AccessKey]) -> Int {
         guard !list.isEmpty else { return 0 }
         if let index = list.firstIndex(where: {$0.isKeySelected}) {
             return index

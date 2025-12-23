@@ -7,19 +7,14 @@
 //
 
 import u_prox_id_lib
-import Combine
+@preconcurrency import Combine
 import Foundation
 
+@MainActor
 final class ScannerViewModel: ObservableObject {
 
   @Published var showMessage: Bool = false
   @Published var message: String = ""
-
-  private var networker: NetworkService
-
-  init() {
-      self.networker = .init(env: .development)
-  }
 
   public func handleScan(result: Result<String, CodeScannerView.ScanError>) {
     switch result {
@@ -31,40 +26,45 @@ final class ScannerViewModel: ObservableObject {
   }
 
   private func sendCode(_ code: String) {
-      Task {
-          do {
-              self.networker.setConfig(
-                  .init(
-                      token: AppPreferences.firebaseToken,
-                      baseTimeKeyServerUrl: "",
-                      basePermanentKeyServerUrl: "",
-                      applicationName: "UPROX" // If you need to set a new application name
-                  )
-              )
-              let result = try await self.networker.sendCodeToGetAnAccessKey(code)
-              
-              await MainActor.run {
-                  self.showMessage = true
-                  switch result {
-                  case .keyTypeAlreadyExists:
-                      self.message = "The key is not issued due this type of already exists in the application."
-                  case .rejected:
-                      self.message = "The key is not issued due to reject by a remote server"
-                  case .success:
-                      self.message = "The key is successfully issued by a remote server."
-                  case .unknown(let error):
-                      self.message = error.localizedDescription
-                  default:
-                      self.message = "Невідома помилка"
-                  }
-              }
-              
-          } catch let error as AppError {
-              await MainActor.run {
-                  self.showMessage = true
-                  self.message = error.localizedDescription
-              }
+    let token = AppPreferences.firebaseToken
+
+    Task { [weak self] in
+      guard let self else { return }
+
+      let statusMessage = await Task.detached(priority: .userInitiated) { [token, code] in
+        let networker = NetworkService(env: .development)
+        networker.setConfig(
+          .init(
+            token: token,
+            baseTimeKeyServerUrl: "",
+            basePermanentKeyServerUrl: "",
+            applicationName: "UPROX" // If you need to set a new application name
+          )
+        )
+
+        do {
+          let result = try await networker.sendCodeToGetAnAccessKey(code)
+          switch result {
+          case .keyTypeAlreadyExists:
+            return "The key is not issued due this type of already exists in the application."
+          case .rejected:
+            return "The key is not issued due to reject by a remote server"
+          case .success:
+            return "The key is successfully issued by a remote server."
+          case .unknown(let error):
+            return error.localizedDescription
+          default:
+            return "Unknown error"
           }
-      }
+        } catch let error as AppError {
+          return error.localizedDescription
+        } catch {
+          return error.localizedDescription
+        }
+      }.value
+
+      self.showMessage = true
+      self.message = statusMessage
+    }
   }
 }

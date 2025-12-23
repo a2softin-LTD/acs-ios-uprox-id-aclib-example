@@ -23,6 +23,7 @@
 		0CE5F32224890F4000F9FEBB /* ActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F31C24890F3F00F9FEBB /* ActionButton.swift */; };
 		0CE5F32324890F4000F9FEBB /* CodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F31D24890F3F00F9FEBB /* CodeScannerView.swift */; };
 		0CE5F32424890F4000F9FEBB /* LoadingIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F31E24890F3F00F9FEBB /* LoadingIndicator.swift */; };
+		0C9F0A1B2F1D4C5A00ABCDEF /* Sendable+u_prox_id_lib.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9F0A1A2F1D4C5A00ABCDEF /* Sendable+u_prox_id_lib.swift */; };
 		0CE5F32A24890F4E00F9FEBB /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F32824890F4E00F9FEBB /* MainViewModel.swift */; };
 		0CE5F32B24890F4E00F9FEBB /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F32924890F4E00F9FEBB /* MainView.swift */; };
 		0CE5F32F24890F5400F9FEBB /* QrScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE5F32D24890F5400F9FEBB /* QrScannerView.swift */; };
@@ -79,6 +80,7 @@
 		0CE5F31C24890F3F00F9FEBB /* ActionButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ActionButton.swift; sourceTree = "<group>"; };
 		0CE5F31D24890F3F00F9FEBB /* CodeScannerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CodeScannerView.swift; sourceTree = "<group>"; };
 		0CE5F31E24890F3F00F9FEBB /* LoadingIndicator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LoadingIndicator.swift; sourceTree = "<group>"; };
+		0C9F0A1A2F1D4C5A00ABCDEF /* Sendable+u_prox_id_lib.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Sendable+u_prox_id_lib.swift"; sourceTree = "<group>"; };
 		0CE5F32824890F4E00F9FEBB /* MainViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
 		0CE5F32924890F4E00F9FEBB /* MainView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		0CE5F32D24890F5400F9FEBB /* QrScannerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QrScannerView.swift; sourceTree = "<group>"; };
@@ -166,6 +168,7 @@
 				0CE5F31C24890F3F00F9FEBB /* ActionButton.swift */,
 				0CE5F31D24890F3F00F9FEBB /* CodeScannerView.swift */,
 				0CE5F31E24890F3F00F9FEBB /* LoadingIndicator.swift */,
+				0C9F0A1A2F1D4C5A00ABCDEF /* Sendable+u_prox_id_lib.swift */,
 			);
 			path = extensions;
 			sourceTree = "<group>";
@@ -292,6 +295,7 @@
 				0CE5F33024890F5400F9FEBB /* ScannerViewModel.swift in Sources */,
 				0C07AE602488053C0056E25D /* AppDelegate.swift in Sources */,
 				0CE5F32124890F4000F9FEBB /* Storage.swift in Sources */,
+				0C9F0A1B2F1D4C5A00ABCDEF /* Sendable+u_prox_id_lib.swift in Sources */,
 				0CE5F32A24890F4E00F9FEBB /* MainViewModel.swift in Sources */,
 				0CE5F32F24890F5400F9FEBB /* QrScannerView.swift in Sources */,
 				0CE5F32024890F4000F9FEBB /* LoadingButton.swift in Sources */,
@@ -478,7 +482,7 @@
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "AcidDemo/worker/AcidDemo-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_WORKSPACE = NO;
 			};
@@ -522,7 +526,7 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "AcidDemo/worker/AcidDemo-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_WORKSPACE = NO;
 			};

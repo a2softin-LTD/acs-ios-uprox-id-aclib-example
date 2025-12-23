@@ -14,8 +14,16 @@ import UIKit
 
 final class BackgroundOpenDoorService {
     
-    @Storage(key: "BackgroundOpenDoorService.Key", defaultValue: false, shared: .base)
-    private static var onStarted: Bool
+    private static let onStartedStorage = Storage<Bool>(
+        key: "BackgroundOpenDoorService.Key",
+        defaultValue: false,
+        shared: .base
+    )
+
+    private static var onStarted: Bool {
+        get { onStartedStorage.wrappedValue }
+        set { onStartedStorage.wrappedValue = newValue }
+    }
     
     static func onRefresh() {
         guard !Self.onStarted else { return }
@@ -95,6 +103,8 @@ fileprivate final class AppBLEBackgroundWorker: NSObject {
     self.subscribeOnDisplayStatus()
   }
 }
+
+extension AppBLEBackgroundWorker: @unchecked Sendable {}
 
 extension AppBLEBackgroundWorker {
 
@@ -396,11 +406,12 @@ public class BackgroundTask {
     var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     
     public func registerBackgroundTask() {
-        DispatchQueue.global().async {
-            self.backgroundTask = UIApplication.shared.beginBackgroundTask(withName: Bundle.main.bundleIdentifier, expirationHandler: {
-                self.endBackgroundTask()
-            })
-        }
+        self.backgroundTask = UIApplication.shared.beginBackgroundTask(
+            withName: Bundle.main.bundleIdentifier,
+            expirationHandler: { [weak self] in
+                self?.endBackgroundTask()
+            }
+        )
     }
 
     /// Ends long-running background task. Called when app comes to foreground from background
@@ -409,3 +420,5 @@ public class BackgroundTask {
         backgroundTask = UIBackgroundTaskIdentifier.invalid
     }
 }
+
+extension BackgroundTask: @unchecked Sendable {}

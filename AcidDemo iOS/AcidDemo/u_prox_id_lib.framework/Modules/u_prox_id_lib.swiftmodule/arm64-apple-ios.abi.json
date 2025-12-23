@@ -1298,6 +1298,13 @@
           },
           {
             "kind": "Conformance",
+            "name": "Sendable",
+            "printedName": "Sendable",
+            "usr": "s:s8SendableP",
+            "mangledName": "$ss8SendableP"
+          },
+          {
+            "kind": "Conformance",
             "name": "Copyable",
             "printedName": "Copyable",
             "usr": "s:s8CopyableP",
@@ -1358,6 +1365,13 @@
             "printedName": "CustomDebugStringConvertible",
             "usr": "s:s28CustomDebugStringConvertibleP",
             "mangledName": "$ss28CustomDebugStringConvertibleP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "SendableMetatype",
+            "printedName": "SendableMetatype",
+            "usr": "s:s16SendableMetatypeP",
+            "mangledName": "$ss16SendableMetatypeP"
           }
         ]
       },
@@ -9603,6 +9617,20 @@
             "printedName": "Equatable",
             "usr": "s:SQ",
             "mangledName": "$sSQ"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Sendable",
+            "printedName": "Sendable",
+            "usr": "s:s8SendableP",
+            "mangledName": "$ss8SendableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "SendableMetatype",
+            "printedName": "SendableMetatype",
+            "usr": "s:s16SendableMetatypeP",
+            "mangledName": "$ss16SendableMetatypeP"
           }
         ]
       },
@@ -9942,6 +9970,20 @@
             "printedName": "Encodable",
             "usr": "s:SE",
             "mangledName": "$sSE"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Sendable",
+            "printedName": "Sendable",
+            "usr": "s:s8SendableP",
+            "mangledName": "$ss8SendableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "SendableMetatype",
+            "printedName": "SendableMetatype",
+            "usr": "s:s16SendableMetatypeP",
+            "mangledName": "$ss16SendableMetatypeP"
           }
         ]
       },
@@ -10394,6 +10436,20 @@
             "printedName": "Encodable",
             "usr": "s:SE",
             "mangledName": "$sSE"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Sendable",
+            "printedName": "Sendable",
+            "usr": "s:s8SendableP",
+            "mangledName": "$ss8SendableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "SendableMetatype",
+            "printedName": "SendableMetatype",
+            "usr": "s:s16SendableMetatypeP",
+            "mangledName": "$ss16SendableMetatypeP"
           }
         ]
       },
@@ -10889,6 +10945,20 @@
                 "printedName": "Encodable",
                 "usr": "s:SE",
                 "mangledName": "$sSE"
+              },
+              {
+                "kind": "Conformance",
+                "name": "Sendable",
+                "printedName": "Sendable",
+                "usr": "s:s8SendableP",
+                "mangledName": "$ss8SendableP"
+              },
+              {
+                "kind": "Conformance",
+                "name": "SendableMetatype",
+                "printedName": "SendableMetatype",
+                "usr": "s:s16SendableMetatypeP",
+                "mangledName": "$ss16SendableMetatypeP"
               }
             ]
           },
@@ -11018,6 +11088,20 @@
             "printedName": "Equatable",
             "usr": "s:SQ",
             "mangledName": "$sSQ"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Sendable",
+            "printedName": "Sendable",
+            "usr": "s:s8SendableP",
+            "mangledName": "$ss8SendableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "SendableMetatype",
+            "printedName": "SendableMetatype",
+            "usr": "s:s16SendableMetatypeP",
+            "mangledName": "$ss16SendableMetatypeP"
           }
         ]
       },
@@ -16017,63 +16101,63 @@
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/bluetooth\/AccessPointsSearcher.swift",
       "kind": "IntegerLiteral",
-      "offset": 652,
+      "offset": 673,
       "length": 3,
       "value": "310"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/bluetooth\/AccessPointsSearcher.swift",
       "kind": "IntegerLiteral",
-      "offset": 679,
+      "offset": 700,
       "length": 4,
       "value": "1000"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/bluetooth\/AccessPointsSearcher.swift",
       "kind": "IntegerLiteral",
-      "offset": 707,
+      "offset": 728,
       "length": 4,
       "value": "2200"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/bluetooth\/AccessPointsSearcher.swift",
       "kind": "BooleanLiteral",
-      "offset": 1542,
+      "offset": 1563,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/bluetooth\/AccessPointsSearcher.swift",
       "kind": "Array",
-      "offset": 1635,
+      "offset": 1656,
       "length": 2,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/bluetooth\/AccessPointsSearcher.swift",
       "kind": "BooleanLiteral",
-      "offset": 1838,
+      "offset": 1859,
       "length": 4,
       "value": "true"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/bluetooth\/AccessPointsSearcher.swift",
       "kind": "IntegerLiteral",
-      "offset": 1886,
+      "offset": 1907,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/bluetooth\/AccessPointsSearcher.swift",
       "kind": "Array",
-      "offset": 1931,
+      "offset": 1952,
       "length": 49,
       "value": "[\"TAG\", \"MPW\", \"MPE\", \"570\", \"580\", \"ES1\", \"UHW\"]"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/bluetooth\/AccessPointsSearcher.swift",
       "kind": "StringLiteral",
-      "offset": 2004,
+      "offset": 2025,
       "length": 38,
       "value": "\"00001101-0000-1000-8000-00805F9B34FB\""
     },
@@ -16507,14 +16591,14 @@
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/periodic auth\/MockPeriodicAuthOfIdentifiers.swift",
       "kind": "StringLiteral",
-      "offset": 3747,
+      "offset": 3746,
       "length": 53,
       "value": "\"Mock.PeriodicAuthOfIdentifiersImpl.AuthorizationKey\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/periodic auth\/MockPeriodicAuthOfIdentifiers.swift",
       "kind": "StringLiteral",
-      "offset": 3920,
+      "offset": 3918,
       "length": 56,
       "value": "\"Mock.PeriodicAuthOfIdentifiersImpl.AuthorizationKeyTTL\""
     },
@@ -16920,51 +17004,9 @@
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/bluetooth\/AccessRequestTask.swift",
       "kind": "BooleanLiteral",
-      "offset": 800,
+      "offset": 821,
       "length": 5,
       "value": "false"
-    },
-    {
-      "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/AppPrefService.swift",
-      "kind": "Array",
-      "offset": 365,
-      "length": 2,
-      "value": "[]"
-    },
-    {
-      "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/AppPrefService.swift",
-      "kind": "StringLiteral",
-      "offset": 450,
-      "length": 17,
-      "value": "\"PowerCorrection\""
-    },
-    {
-      "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/AppPrefService.swift",
-      "kind": "IntegerLiteral",
-      "offset": 483,
-      "length": 1,
-      "value": "0"
-    },
-    {
-      "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/AppPrefService.swift",
-      "kind": "StringLiteral",
-      "offset": 555,
-      "length": 13,
-      "value": "\"EnabledLogs\""
-    },
-    {
-      "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/AppPrefService.swift",
-      "kind": "BooleanLiteral",
-      "offset": 584,
-      "length": 5,
-      "value": "false"
-    },
-    {
-      "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/AppPrefService.swift",
-      "kind": "StringLiteral",
-      "offset": 768,
-      "length": 25,
-      "value": "\"LastUserActionSavedDate\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/extensions\/StaticFields.swift",
@@ -17081,98 +17123,98 @@
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "StringLiteral",
-      "offset": 386,
+      "offset": 396,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "BooleanLiteral",
-      "offset": 562,
+      "offset": 572,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "StringLiteral",
-      "offset": 5471,
+      "offset": 5491,
       "length": 11,
       "value": "\"companyID\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "IntegerLiteral",
-      "offset": 6425,
+      "offset": 6455,
       "length": 1,
       "value": "1"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "IntegerLiteral",
-      "offset": 6448,
+      "offset": 6478,
       "length": 1,
       "value": "2"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "IntegerLiteral",
-      "offset": 6469,
+      "offset": 6499,
       "length": 1,
       "value": "3"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "IntegerLiteral",
-      "offset": 6490,
+      "offset": 6520,
       "length": 1,
       "value": "4"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "IntegerLiteral",
-      "offset": 6508,
+      "offset": 6538,
       "length": 1,
       "value": "5"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "IntegerLiteral",
-      "offset": 6528,
+      "offset": 6558,
       "length": 1,
       "value": "6"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "IntegerLiteral",
-      "offset": 6550,
+      "offset": 6580,
       "length": 1,
       "value": "7"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "IntegerLiteral",
-      "offset": 6674,
+      "offset": 6704,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "StringLiteral",
-      "offset": 6736,
+      "offset": 6766,
       "length": 7,
       "value": "\"UPROX\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "StringLiteral",
-      "offset": 6763,
+      "offset": 6793,
       "length": 9,
       "value": "\"PROXWAY\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/models\/MobileAccessKey.swift",
       "kind": "StringLiteral",
-      "offset": 6789,
+      "offset": 6819,
       "length": 6,
       "value": "\"UKEY\""
     },
@@ -17228,14 +17270,14 @@
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/periodic auth\/PeriodicAuthOfIdentifiers.swift",
       "kind": "StringLiteral",
-      "offset": 3938,
+      "offset": 3937,
       "length": 48,
       "value": "\"PeriodicAuthOfIdentifiersImpl.AuthorizationKey\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/periodic auth\/PeriodicAuthOfIdentifiers.swift",
       "kind": "StringLiteral",
-      "offset": 4106,
+      "offset": 4104,
       "length": 51,
       "value": "\"PeriodicAuthOfIdentifiersImpl.AuthorizationKeyTTL\""
     },
@@ -17543,119 +17585,91 @@
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "StringLiteral",
-      "offset": 215,
-      "length": 31,
-      "value": "\"TraceServiceNetworkTracerList\""
-    },
-    {
-      "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
-      "kind": "Array",
-      "offset": 262,
-      "length": 2,
-      "value": "[]"
-    },
-    {
-      "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
-      "kind": "StringLiteral",
-      "offset": 342,
-      "length": 21,
-      "value": "\"TraceServiceEnabled\""
-    },
-    {
-      "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
-      "kind": "BooleanLiteral",
-      "offset": 379,
-      "length": 5,
-      "value": "false"
-    },
-    {
-      "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
-      "kind": "StringLiteral",
-      "offset": 880,
+      "offset": 1353,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "IntegerLiteral",
-      "offset": 1801,
+      "offset": 2274,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "StringLiteral",
-      "offset": 1848,
+      "offset": 2321,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "StringLiteral",
-      "offset": 1885,
+      "offset": 2358,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "StringLiteral",
-      "offset": 1924,
+      "offset": 2397,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "IntegerLiteral",
-      "offset": 1958,
+      "offset": 2431,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "StringLiteral",
-      "offset": 1998,
+      "offset": 2471,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "StringLiteral",
-      "offset": 2041,
+      "offset": 2514,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "StringLiteral",
-      "offset": 2078,
+      "offset": 2551,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "IntegerLiteral",
-      "offset": 5943,
+      "offset": 6416,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "IntegerLiteral",
-      "offset": 5974,
+      "offset": 6447,
       "length": 1,
       "value": "1"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "IntegerLiteral",
-      "offset": 5999,
+      "offset": 6472,
       "length": 1,
       "value": "2"
     },
     {
       "filePath": "\/Users\/yevhenkhyzhniak\/Documents\/work\/acs-ios-uprox-id\/u-prox-id-lib\/managers\/Tracer.swift",
       "kind": "IntegerLiteral",
-      "offset": 6024,
+      "offset": 6497,
       "length": 1,
       "value": "3"
     },

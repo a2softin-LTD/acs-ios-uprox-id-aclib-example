@@ -9,6 +9,10 @@
 import AVFoundation
 import SwiftUI
 
+private struct UncheckedSendableBox<Value>: @unchecked Sendable {
+    let value: Value
+}
+
 public struct CodeScannerView: UIViewControllerRepresentable {
     public enum ScanError: Error {
         case badInput, badOutput
@@ -109,8 +113,9 @@ public struct CodeScannerView: UIViewControllerRepresentable {
             previewLayer.videoGravity = .resizeAspectFill
             view.layer.addSublayer(previewLayer)
             updateOrientation()
+            let session = UncheckedSendableBox(value: captureSession)
             DispatchQueue.global().async {
-                self.captureSession.startRunning()
+                session.value?.startRunning()
             }
             
         }
@@ -119,8 +124,9 @@ public struct CodeScannerView: UIViewControllerRepresentable {
             super.viewWillAppear(animated)
 
             if (captureSession?.isRunning == false) {
+                let session = UncheckedSendableBox(value: captureSession)
                 DispatchQueue.global().async {
-                    self.captureSession.startRunning()
+                    session.value?.startRunning()
                 }
             }
         }
@@ -129,8 +135,9 @@ public struct CodeScannerView: UIViewControllerRepresentable {
             super.viewWillDisappear(animated)
 
             if (captureSession?.isRunning == true) {
+                let session = UncheckedSendableBox(value: captureSession)
                 DispatchQueue.main.async {
-                    self.captureSession.stopRunning()
+                    session.value?.stopRunning()
                 }
                 
             }
@@ -179,4 +186,3 @@ struct CodeScannerView_Previews: PreviewProvider {
         }
     }
 }
-

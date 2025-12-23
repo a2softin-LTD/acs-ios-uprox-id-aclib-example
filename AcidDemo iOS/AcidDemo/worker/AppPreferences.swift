@@ -10,15 +10,27 @@ import Foundation
 
 struct AppPreferences {
 
-  @Storage(key: "Firebase Token", defaultValue: "", shared: .base)
-  static var firebaseToken: String
+  private static let firebaseTokenStorage = Storage<String>(key: "Firebase Token", defaultValue: "", shared: .base)
+  nonisolated(unsafe) static var firebaseToken: String {
+    get { firebaseTokenStorage.wrappedValue }
+    set { firebaseTokenStorage.wrappedValue = newValue }
+  }
 
-  @Storage(key: "Turn by screen mode", defaultValue: false, shared: .base)
-  static var turnByScreenMode: Bool
+  private static let turnByScreenModeStorage = Storage<Bool>(key: "Turn by screen mode", defaultValue: false, shared: .base)
+  nonisolated(unsafe) static var turnByScreenMode: Bool {
+    get { turnByScreenModeStorage.wrappedValue }
+    set { turnByScreenModeStorage.wrappedValue = newValue }
+  }
 
-  @Storage(key: "Hands Free Mode", defaultValue: false, shared: .base)
-  static var handsFreeMode: Bool
-    
-  @Storage(key: "PowerCorrection.key", defaultValue: 0.8, shared: .base)
-  static var powerCorrection: Double
-}
+  private static let handsFreeModeStorage = Storage<Bool>(key: "Hands Free Mode", defaultValue: false, shared: .base)
+  nonisolated(unsafe) static var handsFreeMode: Bool {
+    get { handsFreeModeStorage.wrappedValue }
+    set { handsFreeModeStorage.wrappedValue = newValue }
+  }
+
+  private static let powerCorrectionStorage = Storage<Double>(key: "PowerCorrection.key", defaultValue: 0.8, shared: .base)
+  nonisolated(unsafe) static var powerCorrection: Double {
+    get { powerCorrectionStorage.wrappedValue }
+    set { powerCorrectionStorage.wrappedValue = newValue }
+  }
+} 

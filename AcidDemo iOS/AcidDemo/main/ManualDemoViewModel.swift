@@ -9,6 +9,7 @@ import Combine
 import Foundation
 import u_prox_id_lib
 
+@MainActor
 final class ManualDemoViewModel: ObservableObject {
     @Published var powerCorrection: Double = AppPreferences.powerCorrection
     @Published var keys: [AccessKey] = []
@@ -30,12 +31,15 @@ final class ManualDemoViewModel: ObservableObject {
     private let minPowerCorrection: Double = 0.2
     private let maxPowerCorrection: Double = 1.6
 
+    @MainActor
     init() {
         self.bleService.powerCorrection = self.powerCorrection
     }
 
     func onAppear() {
-        Task { await self.loadKeys() }
+        Task { @MainActor in
+            await self.loadKeys()
+        }
     }
 
     func updatePowerCorrection(_ value: Double) {
@@ -51,10 +55,10 @@ final class ManualDemoViewModel: ObservableObject {
         self.desktopResult = nil
         self.statusMessage = "Запит до desktop рідера..."
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.bleService.requestKeyFromDesktopReader { [weak self] result in
+        self.bleService.requestKeyFromDesktopReader { [weak self] result in
+            Task { @MainActor in
                 guard let self else { return }
-                Task { await self.handleDesktopResult(result) }
+                await self.handleDesktopResult(result)
             }
         }
     }
@@ -68,8 +72,8 @@ final class ManualDemoViewModel: ObservableObject {
         self.statusMessage = "Сканування..."
 
         self.bleService.discoverAccessPoints { [weak self] points in
-            guard let self else { return }
-            DispatchQueue.main.async {
+            Task { @MainActor in
+                guard let self else { return }
                 self.isSearchingDevices = false
                 self.discoveredPoints = points
                 self.devices = points
@@ -97,8 +101,8 @@ final class ManualDemoViewModel: ObservableObject {
             to: point,
             key: key,
             completion: { [weak self] result in
-                guard let self else { return }
-                DispatchQueue.main.async {
+                Task { @MainActor in
+                    guard let self else { return }
                     self.isConnecting = false
                     self.accessResult = result
                     self.statusMessage = self.message(for: result)
@@ -122,11 +126,9 @@ final class ManualDemoViewModel: ObservableObject {
 
     private func loadKeys() async {
         let list = await self.keysService.getKeys()
-        await MainActor.run {
-            self.keys = list
-            if self.selectedKeyID == nil {
-                self.selectedKeyID = list.first?.id
-            }
+        self.keys = list
+        if self.selectedKeyID == nil {
+            self.selectedKeyID = list.first?.id
         }
     }
 

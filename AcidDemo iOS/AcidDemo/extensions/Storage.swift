@@ -50,7 +50,7 @@ struct Storage<T: Codable> {
                 return defaultValue
             }
         }
-        set {
+        nonmutating set {
             
             switch type {
             case .base:
@@ -66,3 +66,6 @@ struct Storage<T: Codable> {
         }
     }
 }
+
+extension Storage.StorageType: Sendable {}
+extension Storage: Sendable where T: Sendable {}
