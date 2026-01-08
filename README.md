@@ -291,6 +291,31 @@ func deleteKey() {
 
 ```
 
+Якщо потрібно видалити всі протерміновані ключі, можна відфільтрувати список за властивістю `isKeyExpired` та викликати видалення для кожного такого ключа:
+
+```swift
+private var keysService: AccessKeysService
+
+public init() {
+  self.keysService = .init()
+}
+
+func removeExpiredKeys() {
+    Task {
+        let allKeys = await self.keysService.getKeys()
+        let expiredKeys = allKeys.filter { $0.isKeyExpired }
+        
+        for key in expiredKeys {
+            _ = await self.keysService.removeAccessKey(key)
+        }
+        
+        await MainActor.run {
+            print("Видалено \(expiredKeys.count) протермінованих ключів")
+        }
+    }
+}
+```
+
 Якщо потрібно оновити назву ключа, що відображається в інтерфейсі, використовуйте функцію `.updateAccessKeyName(_ key: AccessKey)`
 
 ```
