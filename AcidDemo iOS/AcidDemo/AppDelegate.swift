@@ -9,9 +9,16 @@
 //import Firebase
 //import FirebaseMessaging
 import UIKit
+import UserNotifications
+import u_prox_id_lib
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    
+    lazy private var remoteNotifications: RemoteNotification = .init(
+        token: AppPreferences.firebaseToken,
+        env: .development
+    )
     
     func application(
         _ application: UIApplication,
@@ -20,7 +27,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         BackgroundOpenDoorService.onStart()
         
-        //self.configurateAppleNotification(application)
+        self.configurateAppleNotification(application)
         return true
     }
     
@@ -36,26 +43,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
     
-//    fileprivate func configurateAppleNotification(_ application: UIApplication) {
-//        application.applicationIconBadgeNumber = 0
-//        UNUserNotificationCenter.current().delegate = self
-//        
-//        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-//        UNUserNotificationCenter.current().requestAuthorization(
-//            options: authOptions,
-//            completionHandler: { _, _ in })
-//        
-//        application.registerForRemoteNotifications()
-//    }
+    fileprivate func configurateAppleNotification(_ application: UIApplication) {
+        application.applicationIconBadgeNumber = 0
+        UNUserNotificationCenter.current().delegate = self
+        
+        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: authOptions,
+            completionHandler: { _, _ in })
+        
+        application.registerForRemoteNotifications()
+    }
     
 }
 
-//extension AppDelegate: UNUserNotificationCenterDelegate {
-//    
-//    func application(
-//        _ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
-//        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
-//    ) {
-//        completionHandler(UIBackgroundFetchResult.newData)
-//    }
-//}
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    
+    func application(
+        _ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        Task {
+            var remoteNotifications = self.remoteNotifications
+            _ = await remoteNotifications.receive(userInfo)
+            completionHandler(.newData)
+        }
+    }
+}
+
+extension RemoteNotification: @unchecked @retroactive Sendable {}

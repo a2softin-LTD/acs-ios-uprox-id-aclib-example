@@ -53,6 +53,8 @@
 
 - AccessKeysService, клас використовується редагування назви "ключа доступу", видалення, зміни ключа за замовчуванням.
 
+- RemoteNotification, структура для обробки push-сповіщень та управління станом ключів через віддалені команди.
+
 
 ## Встановлення 
 
@@ -310,4 +312,50 @@ public func changeKeyName(_ new: String) {
     }
 }
 
+```
+
+##### RemoteNotification
+
+Для обробки push-сповіщень від сервера (наприклад, для деактивації тимчасового ключа) використовуйте структуру `RemoteNotification`.
+
+> [!NOTE]
+> Push-сповіщення надходять як "тихі" (silent) — без звуку та банера. Вони обробляються у фоновому режимі (`content-available: 1`).
+
+```swift
+import UserNotifications
+import u_prox_id_lib
+
+class AppDelegate: UIResponder, UIApplicationDelegate {
+
+    private var remoteNotifications: RemoteNotification = .init(token: nil, env: nil)
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        self.configurateAppleNotification(application)
+        return true
+    }
+
+    fileprivate func configurateAppleNotification(_ application: UIApplication) {
+        UNUserNotificationCenter.current().delegate = self
+        
+        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: authOptions,
+            completionHandler: { _, _ in })
+        
+        application.registerForRemoteNotifications()
+    }
+}
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    func application(
+        _ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        Task {
+            var remoteNotifications = self.remoteNotifications
+            _ = await self.remoteNotifications.receive(userInfo)
+            completionHandler(.newData)
+        }
+    }
+}
 ```
