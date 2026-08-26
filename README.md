@@ -88,9 +88,14 @@
 3. В info.plist додати фонові режими:
 
     - App communicates using CoreBluetooth - `використовується для сканування і підключення до периферійного пристрою у фоновому режимі`
-    
+
     - App registers for location updates - `використовуються для визначення відстані до периферії у фоновому режимі`
-    
+
+    - Remote notifications - `обовʼязково, якщо використовуються тихі push-команди від сервера` (див. [RemoteNotification](#remotenotification))
+
+4. Якщо використовуються push-команди — додати entitlement `aps-environment`
+   (Signing & Capabilities → Push Notifications).
+
 
 ## Що в демці НЕ є частиною бібліотеки
 
@@ -390,41 +395,68 @@ public func changeKeyName(_ new: String) {
 > [!NOTE]
 > Push-сповіщення надходять як "тихі" (silent) — без звуку та банера. Вони обробляються у фоновому режимі (`content-available: 1`).
 
+#### Що потрібно для тихих push
+
+- **`UIBackgroundModes` → `remote-notification`.** Це єдиний фоновий режим,
+  який тут задіяний. `Background fetch` — інший механізм (`BGAppRefreshTask`)
+  і для тихих push **не потрібен**.
+- Entitlement `aps-environment`.
+- `registerForRemoteNotifications()` і передача отриманого токена в
+  `RemoteNotification`.
+- Реалізований `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)`
+  з обовʼязковим викликом `completionHandler` — застосунок має близько 30 секунд.
+- Заголовки APNs: `apns-push-type: background`, `apns-priority: 5`. З
+  `apns-priority: 10` APNs відхилить push із `content-available`.
+
+> [!IMPORTANT]
+> Дозвіл користувача на сповіщення для тихих push **не потрібен** — вони
+> надходять навіть якщо користувач натиснув «Заборонити». `requestAuthorization`
+> потрібен лише для видимих банерів.
+
+> [!WARNING]
+> Доставка не гарантована. Система тротлить тихі push за частотою і станом
+> пристрою, не доставляє їх у Low Power Mode і не доставляє взагалі після того,
+> як користувач закрив застосунок свайпом з таск-світчера. Не будуйте на них
+> логіку, яка мусить відпрацювати обовʼязково.
+
 ```swift
 import UserNotifications
 import u_prox_id_lib
 
-class AppDelegate: UIResponder, UIApplicationDelegate {
+@main
+final class AppDelegate: UIResponder, UIApplicationDelegate {
 
-    private var remoteNotifications: RemoteNotification = .init(token: nil, env: nil)
+    private var remoteNotifications: RemoteNotification = .init(token: nil, env: .development)
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        self.configurateAppleNotification(application)
+        application.registerForRemoteNotifications()
         return true
     }
 
-    fileprivate func configurateAppleNotification(_ application: UIApplication) {
-        UNUserNotificationCenter.current().delegate = self
-        
-        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-        UNUserNotificationCenter.current().requestAuthorization(
-            options: authOptions,
-            completionHandler: { _, _ in })
-        
-        application.registerForRemoteNotifications()
-    }
-}
-
-extension AppDelegate: UNUserNotificationCenterDelegate {
+    // Без цього бібліотека не отримає токен, і серверу нікуди слати команди.
     func application(
-        _ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+        self.remoteNotifications = .init(token: token, env: .development)
+    }
+
+    // Метод UIApplicationDelegate, а не UNUserNotificationCenterDelegate:
+    // push без банера ніколи не потрапляє в userNotificationCenter(_:willPresent:).
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
         Task {
-            var remoteNotifications = self.remoteNotifications
-            _ = await self.remoteNotifications.receive(userInfo)
+            var notifications = self.remoteNotifications
+            let state = await notifications.receive(userInfo)
+            print("Remote notification handled: \(state)")
             completionHandler(.newData)
         }
     }
 }
 ```
+
+Робочий приклад — [AppDelegate.swift](AcidDemo%20iOS/AcidDemo/AppDelegate.swift).
