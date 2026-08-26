@@ -49,6 +49,35 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     // MARK: - Push notifications
+    //
+    // The library is driven by *silent* pushes: the server sends
+    // `content-available: 1` with no alert, sound or badge, and the payload is
+    // handed to `RemoteNotification.receive(_:)` below.
+    //
+    // What silent push actually needs:
+    //
+    //   * `UIBackgroundModes` containing `remote-notification`
+    //     (Signing & Capabilities → Background Modes → Remote notifications).
+    //     This is the only background mode involved. "Background fetch" is a
+    //     different mechanism — `BGAppRefreshTask` — and is not required.
+    //   * the `aps-environment` entitlement
+    //   * `registerForRemoteNotifications()`, and the resulting token passed to
+    //     the library (see `didRegisterForRemoteNotificationsWithDeviceToken`)
+    //   * `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)`
+    //     implemented, and the completion handler actually called — the app
+    //     gets roughly 30 seconds before the system stops listening
+    //   * APNs headers `apns-push-type: background` and `apns-priority: 5`;
+    //     APNs rejects a `content-available` push sent at priority 10
+    //
+    // Asking the user for notification permission is NOT one of them. Silent
+    // pushes arrive even when the user denied alerts — the authorization
+    // request below exists only so the demo can also show visible
+    // notifications.
+    //
+    // Delivery is best-effort, never guaranteed: the system throttles by
+    // frequency and device state, delivers nothing in Low Power Mode, and
+    // delivers nothing at all after the user force-quits the app from the app
+    // switcher.
 
     private func configurateAppleNotification(_ application: UIApplication) {
         let center = UNUserNotificationCenter.current()
@@ -65,6 +94,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         application.registerForRemoteNotifications()
     }
 
+    /// Without this the library never receives a token and the server has
+    /// nowhere to send anything — silent push then fails silently, which is
+    /// exactly as hard to notice as it sounds.
     func application(
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
@@ -81,6 +113,11 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         print("Remote notification registration failed: \(error.localizedDescription)")
     }
 
+    /// Entry point for silent pushes. Note this is a `UIApplicationDelegate`
+    /// method, not a `UNUserNotificationCenterDelegate` one: a push with no
+    /// alert never reaches `userNotificationCenter(_:willPresent:)`.
+    ///
+    /// `completionHandler` must be called on every path, including failures.
     func application(
         _ application: UIApplication,
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
