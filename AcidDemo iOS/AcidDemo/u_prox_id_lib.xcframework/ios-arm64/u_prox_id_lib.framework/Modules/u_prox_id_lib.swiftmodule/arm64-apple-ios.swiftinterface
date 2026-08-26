@@ -26,6 +26,11 @@ public enum AppError : Swift.Error, Swift.Equatable, Foundation.LocalizedError, 
   case disconnectSocket
   public static func == (a: u_prox_id_lib.AppError, b: u_prox_id_lib.AppError) -> Swift.Bool
 }
+extension u_prox_id_lib.AppError {
+  public var errorDescription: Swift.String? {
+    get
+  }
+}
 public protocol AccessPointsSearcherDelegate : AnyObject {
   func receiveBluetoothState(_ state: CoreBluetooth.CBManagerState)
 }
