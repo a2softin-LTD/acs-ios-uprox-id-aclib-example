@@ -10,25 +10,70 @@ import SwiftUI
 
 struct QrScannerView: View {
 
-  @ObservedObject var viewModel: ScannerViewModel = .init()
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel: ScannerViewModel = .init()
 
-  var body: some View {
-    NavigationView {
-      VStack {
-        CodeScannerView(codeTypes: [.qr], completion: self.viewModel.handleScan)
-      }
-      .navigationBarTitle("Scanning", displayMode: .inline)
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                switch self.viewModel.cameraState {
+                case .unknown:
+                    ProgressView().tint(.white)
+                case .authorized:
+                    CodeScannerView(codeTypes: [.qr], completion: self.viewModel.handleScan)
+                        .ignoresSafeArea(edges: .bottom)
+                        .overlay(self.reticle)
+                case .denied:
+                    self.cameraDeniedView
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if let status = self.viewModel.status {
+                    StatusBanner(status: status)
+                        .padding()
+                        .background(.ultraThinMaterial)
+                }
+            }
+            .navigationTitle("Scan QR code")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { self.dismiss() }
+                }
+            }
+        }
+        .task { await self.viewModel.requestCameraAccess() }
+        .onChange(of: self.viewModel.didIssueKey) { didIssue in
+            guard didIssue else { return }
+            self.dismiss()
+        }
     }
 
-    .alert(isPresented: self.$viewModel.showMessage) { () -> Alert in
-      Alert(
-        title: Text("Warning!!!"), message: Text(self.viewModel.message), dismissButton: .cancel())
+    private var reticle: some View {
+        RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .strokeBorder(Color.white.opacity(0.85), lineWidth: 3)
+            .frame(width: 240, height: 240)
+            .shadow(radius: 8)
+            .allowsHitTesting(false)
     }
-  }
-}
 
-struct QrScannerView_Previews: PreviewProvider {
-  static var previews: some View {
-    QrScannerView()
-  }
+    private var cameraDeniedView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "camera.fill")
+                .font(.largeTitle)
+            Text("Camera access is off")
+                .font(.headline)
+            Text("Enable the camera for AcidDemo in Settings to scan QR codes.")
+                .font(.footnote)
+                .multilineTextAlignment(.center)
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                Link("Open Settings", destination: url)
+                    .padding(.top, 4)
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(32)
+    }
 }

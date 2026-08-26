@@ -1,5 +1,5 @@
 //
-//  UIKitCodeScannerView.swift
+//  CodeScannerView.swift
 //  Acid_Demo
 //
 //  Created by Yevhen Khyzhniak on 03.06.2020.
@@ -9,180 +9,170 @@
 import AVFoundation
 import SwiftUI
 
+/// `AVCaptureSession` is not `Sendable`, but starting/stopping it off the main
+/// thread is exactly what Apple asks for. The box makes that intent explicit.
 private struct UncheckedSendableBox<Value>: @unchecked Sendable {
     let value: Value
 }
 
-public struct CodeScannerView: UIViewControllerRepresentable {
-    public enum ScanError: Error {
-        case badInput, badOutput
+/// Wraps `AVCaptureSession` in a SwiftUI view and reports the first code it reads.
+///
+/// The caller is expected to have camera authorization already — see
+/// `ScannerViewModel.requestCameraAccess()`.
+struct CodeScannerView: UIViewControllerRepresentable {
+
+    enum ScanError: Error {
+        case badInput
+        case badOutput
+        case noCamera
     }
 
-    public class ScannerCoordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
-        var parent: CodeScannerView
-        var codeFound = false
+    let codeTypes: [AVMetadataObject.ObjectType]
+    let completion: (Result<String, ScanError>) -> Void
 
-        init(parent: CodeScannerView) {
-            self.parent = parent
-        }
-
-        public func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
-            if let metadataObject = metadataObjects.first {
-                guard let readableObject = metadataObject as? AVMetadataMachineReadableCodeObject else { return }
-                guard let stringValue = readableObject.stringValue else { return }
-                guard codeFound == false else { return }
-
-                AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
-                found(code: stringValue)
-
-                // make sure we only trigger scans once per use
-                codeFound = true
-            }
-        }
-
-        func found(code: String) {
-            parent.completion(.success(code))
-        }
-
-        func didFail(reason: ScanError) {
-            parent.completion(.failure(reason))
-        }
+    func makeCoordinator() -> ScannerCoordinator {
+        ScannerCoordinator(completion: self.completion)
     }
 
-    
-    public class ScannerViewController: UIViewController {
-        var captureSession: AVCaptureSession!
-        var previewLayer: AVCaptureVideoPreviewLayer!
-        var delegate: ScannerCoordinator?
-
-        override public func viewDidLoad() {
-            super.viewDidLoad()
-
-
-            NotificationCenter.default.addObserver(self,
-                                                   selector: #selector(updateOrientation),
-                                                   name: Notification.Name("UIDeviceOrientationDidChangeNotification"),
-                                                   object: nil)
-
-            view.backgroundColor = UIColor.black
-            captureSession = AVCaptureSession()
-
-            guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else { return }
-            let videoInput: AVCaptureDeviceInput
-
-            do {
-                videoInput = try AVCaptureDeviceInput(device: videoCaptureDevice)
-            } catch {
-                return
-            }
-
-            if (captureSession.canAddInput(videoInput)) {
-                captureSession.addInput(videoInput)
-            } else {
-                delegate?.didFail(reason: .badInput)
-                return
-            }
-
-            let metadataOutput = AVCaptureMetadataOutput()
-
-            if (captureSession.canAddOutput(metadataOutput)) {
-                captureSession.addOutput(metadataOutput)
-
-                metadataOutput.setMetadataObjectsDelegate(delegate, queue: DispatchQueue.main)
-                metadataOutput.metadataObjectTypes = delegate?.parent.codeTypes
-            } else {
-                delegate?.didFail(reason: .badOutput)
-                return
-            }
-        }
-
-        override public func viewWillLayoutSubviews() {
-            previewLayer?.frame = view.layer.bounds
-        }
-
-        @objc func updateOrientation() {
-            guard let orientation = UIApplication.shared.windows.first?.windowScene?.interfaceOrientation else { return }
-            guard let connection = captureSession.connections.last, connection.isVideoOrientationSupported else { return }
-            connection.videoOrientation = AVCaptureVideoOrientation(rawValue: orientation.rawValue) ?? .portrait
-        }
-
-        override public func viewDidAppear(_ animated: Bool) {
-            super.viewDidAppear(animated)
-            previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-            previewLayer.frame = view.layer.bounds
-            previewLayer.videoGravity = .resizeAspectFill
-            view.layer.addSublayer(previewLayer)
-            updateOrientation()
-            let session = UncheckedSendableBox(value: captureSession)
-            DispatchQueue.global().async {
-                session.value?.startRunning()
-            }
-            
-        }
-
-        override public func viewWillAppear(_ animated: Bool) {
-            super.viewWillAppear(animated)
-
-            if (captureSession?.isRunning == false) {
-                let session = UncheckedSendableBox(value: captureSession)
-                DispatchQueue.global().async {
-                    session.value?.startRunning()
-                }
-            }
-        }
-
-        override public func viewWillDisappear(_ animated: Bool) {
-            super.viewWillDisappear(animated)
-
-            if (captureSession?.isRunning == true) {
-                let session = UncheckedSendableBox(value: captureSession)
-                DispatchQueue.main.async {
-                    session.value?.stopRunning()
-                }
-                
-            }
-
-            NotificationCenter.default.removeObserver(self)
-        }
-
-        override public var prefersStatusBarHidden: Bool {
-            return true
-        }
-
-        override public var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-            return .all
-        }
-    }
-    
-    public let codeTypes: [AVMetadataObject.ObjectType]
-    public var simulatedData = ""
-    public var completion: (Result<String, ScanError>) -> Void
-
-    public init(codeTypes: [AVMetadataObject.ObjectType], simulatedData: String = "", completion: @escaping (Result<String, ScanError>) -> Void) {
-        self.codeTypes = codeTypes
-        self.simulatedData = simulatedData
-        self.completion = completion
-    }
-
-    public func makeCoordinator() -> ScannerCoordinator {
-        return ScannerCoordinator(parent: self)
-    }
-
-    public func makeUIViewController(context: Context) -> ScannerViewController {
+    func makeUIViewController(context: Context) -> ScannerViewController {
         let viewController = ScannerViewController()
-        viewController.delegate = context.coordinator
+        viewController.codeTypes = self.codeTypes
+        viewController.coordinator = context.coordinator
         return viewController
     }
 
-    public func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {
+    func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {}
+}
 
+// MARK: - Coordinator
+
+extension CodeScannerView {
+
+    @MainActor
+    final class ScannerCoordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
+
+        private let completion: (Result<String, ScanError>) -> Void
+        private var codeFound = false
+
+        init(completion: @escaping (Result<String, ScanError>) -> Void) {
+            self.completion = completion
+        }
+
+        /// The metadata output below is configured with `DispatchQueue.main`,
+        /// so this callback really does run on the main actor.
+        nonisolated func metadataOutput(
+            _ output: AVCaptureMetadataOutput,
+            didOutput metadataObjects: [AVMetadataObject],
+            from connection: AVCaptureConnection
+        ) {
+            // `AVMetadataObject` is not `Sendable`; read the string out before
+            // hopping onto the main actor.
+            guard
+                let readableObject = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
+                let stringValue = readableObject.stringValue
+            else { return }
+
+            MainActor.assumeIsolated {
+                guard !self.codeFound else { return }
+
+                // Only ever trigger one scan per presentation.
+                self.codeFound = true
+                AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
+                self.completion(.success(stringValue))
+            }
+        }
+
+        func fail(_ reason: ScanError) {
+            guard !self.codeFound else { return }
+            self.completion(.failure(reason))
+        }
     }
 }
 
-struct CodeScannerView_Previews: PreviewProvider {
-    static var previews: some View {
-        CodeScannerView(codeTypes: [.qr]) { result in
-            // do nothing
+// MARK: - View controller
+
+extension CodeScannerView {
+
+    final class ScannerViewController: UIViewController {
+
+        var codeTypes: [AVMetadataObject.ObjectType] = []
+        weak var coordinator: ScannerCoordinator?
+
+        private let captureSession = AVCaptureSession()
+        private var previewLayer: AVCaptureVideoPreviewLayer?
+
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            self.view.backgroundColor = .black
+            self.configureSession()
+        }
+
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            self.startSession()
+        }
+
+        override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            self.stopSession()
+        }
+
+        override func viewDidLayoutSubviews() {
+            super.viewDidLayoutSubviews()
+            self.previewLayer?.frame = self.view.layer.bounds
+        }
+
+        override var prefersStatusBarHidden: Bool { true }
+
+        // MARK: - Private
+
+        private func configureSession() {
+            guard let device = AVCaptureDevice.default(for: .video) else {
+                self.coordinator?.fail(.noCamera)
+                return
+            }
+
+            guard
+                let input = try? AVCaptureDeviceInput(device: device),
+                self.captureSession.canAddInput(input)
+            else {
+                self.coordinator?.fail(.badInput)
+                return
+            }
+            self.captureSession.addInput(input)
+
+            let metadataOutput = AVCaptureMetadataOutput()
+            guard self.captureSession.canAddOutput(metadataOutput) else {
+                self.coordinator?.fail(.badOutput)
+                return
+            }
+            self.captureSession.addOutput(metadataOutput)
+            metadataOutput.setMetadataObjectsDelegate(self.coordinator, queue: .main)
+            metadataOutput.metadataObjectTypes = self.codeTypes
+
+            // Added once — `viewDidAppear` used to stack a new layer on every appearance.
+            let previewLayer = AVCaptureVideoPreviewLayer(session: self.captureSession)
+            previewLayer.frame = self.view.layer.bounds
+            previewLayer.videoGravity = .resizeAspectFill
+            self.view.layer.addSublayer(previewLayer)
+            self.previewLayer = previewLayer
+        }
+
+        private func startSession() {
+            guard !self.captureSession.isRunning else { return }
+            let session = UncheckedSendableBox(value: self.captureSession)
+            // `startRunning()` blocks; never call it on the main thread.
+            DispatchQueue.global(qos: .userInitiated).async {
+                session.value.startRunning()
+            }
+        }
+
+        private func stopSession() {
+            guard self.captureSession.isRunning else { return }
+            let session = UncheckedSendableBox(value: self.captureSession)
+            DispatchQueue.global(qos: .userInitiated).async {
+                session.value.stopRunning()
+            }
         }
     }
 }

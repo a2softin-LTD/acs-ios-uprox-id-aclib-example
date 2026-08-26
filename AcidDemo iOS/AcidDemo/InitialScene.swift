@@ -9,23 +9,16 @@
 import SwiftUI
 
 struct InitialScene: View {
-    var body: some View {
-        ZStack {
-            ScenePhaseListener()
-            MainView()
-        }
-    }
-}
 
-struct ScenePhaseListener: View {
-    
-    @Environment(\.scenePhase) var scenePhase
-    
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some View {
-        EmptyView()
-            .onChange(of: scenePhase) { newPhase in
+        MainView()
+            .onChange(of: self.scenePhase) { newPhase in
                 switch newPhase {
                 case .active, .background:
+                    // Keep the background worker in sync with the preferences
+                    // whenever the app changes state.
                     BackgroundOpenDoorService.onRefresh()
                 default:
                     break

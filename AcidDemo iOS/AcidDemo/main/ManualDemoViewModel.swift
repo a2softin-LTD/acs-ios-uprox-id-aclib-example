@@ -9,56 +9,69 @@ import Combine
 import Foundation
 import u_prox_id_lib
 
+/// Drives the "Manual" tab: every step (discover, pick a reader, pick a key,
+/// connect) is done explicitly instead of letting the library decide.
 @MainActor
 final class ManualDemoViewModel: ObservableObject {
+
+    // MARK: - Properties
+
     @Published var powerCorrection: Double = AppPreferences.powerCorrection
-    @Published var keys: [AccessKey] = []
-    @Published var selectedKeyID: UUID?
-    @Published var qrInput: String = ""
-    @Published var isRequestingDesktop: Bool = false
-    @Published var desktopResult: RequestKeyFromDesktopReaderResult?
-    @Published var devices: [AccessPoint] = []
-    @Published var selectedDeviceID: UUID?
-    @Published var isSearchingDevices: Bool = false
-    @Published var isConnecting: Bool = false
-    @Published var accessResult: RequestAccessResult?
-    @Published var statusMessage: String = ""
+
+    @Published private(set) var keys: [AccessKey] = []
+    @Published private(set) var selectedKeyID: UUID?
+    @Published private(set) var isRequestingDesktop: Bool = false
+
+    @Published private(set) var devices: [AccessPoint] = []
+    @Published private(set) var selectedDeviceID: UUID?
+    @Published private(set) var isSearchingDevices: Bool = false
+
+    @Published private(set) var isConnecting: Bool = false
+    @Published private(set) var status: DemoStatus?
+
+    // MARK: - Private Properties
 
     private var bleService: BluetoothService = .init()
     private let keysService: AccessKeysService = .init()
-    private var discoveredPoints: [AccessPoint] = []
+    private var bag: Set<AnyCancellable> = []
 
-    private let minPowerCorrection: Double = 0.2
-    private let maxPowerCorrection: Double = 1.6
+    var canConnect: Bool {
+        self.selectedKeyID != nil && self.selectedDeviceID != nil
+    }
 
-    @MainActor
     init() {
         self.bleService.powerCorrection = self.powerCorrection
+
+        self.$powerCorrection
+            .dropFirst()
+            .removeDuplicates()
+            .debounce(for: 0.3, scheduler: RunLoop.main)
+            .sink { [weak self] value in
+                AppPreferences.powerCorrection = value
+                self?.bleService.powerCorrection = value
+            }
+            .store(in: &self.bag)
     }
+
+    // MARK: - Public Methods
 
     func onAppear() {
-        Task { @MainActor in
-            await self.loadKeys()
-        }
-    }
-
-    func updatePowerCorrection(_ value: Double) {
-        let bounded = min(max(value, self.minPowerCorrection), self.maxPowerCorrection)
-        self.powerCorrection = bounded
-        AppPreferences.powerCorrection = bounded
-        self.bleService.powerCorrection = bounded
+        Task { await self.loadKeys() }
     }
 
     func requestDesktopKey() {
         guard !self.isRequestingDesktop else { return }
         self.isRequestingDesktop = true
-        self.desktopResult = nil
-        self.statusMessage = "Запит до desktop рідера..."
+        self.status = .info("Waiting for a desktop reader…")
 
         self.bleService.requestKeyFromDesktopReader { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
-                await self.handleDesktopResult(result)
+                self.isRequestingDesktop = false
+                self.status = result.status
+                if result == .success {
+                    await self.loadKeys()
+                }
             }
         }
     }
@@ -67,48 +80,43 @@ final class ManualDemoViewModel: ObservableObject {
         guard !self.isSearchingDevices else { return }
         self.isSearchingDevices = true
         self.devices = []
-        self.discoveredPoints = []
         self.selectedDeviceID = nil
-        self.statusMessage = "Сканування..."
+        self.status = .info("Scanning for readers…")
 
         self.bleService.discoverAccessPoints { [weak self] points in
             Task { @MainActor in
                 guard let self else { return }
                 self.isSearchingDevices = false
-                self.discoveredPoints = points
                 self.devices = points
-                self.statusMessage = points.isEmpty ? "Девайси не знайдені" : "Знайдено \(points.count)"
+                self.status =
+                    points.isEmpty
+                    ? .failure("No readers found")
+                    : .success("Found \(points.count) reader(s)")
             }
         }
     }
 
     func connectSelected() {
-        guard let key = self.selectedKey else {
-            self.statusMessage = "Оберіть ключ"
-            return
-        }
-        guard let point = self.discoveredPoints.first(where: { $0.identifier == self.selectedDeviceID }) else {
-            self.statusMessage = "Оберіть девайс"
-            return
-        }
         guard !self.isConnecting else { return }
+        guard let key = self.selectedKey else {
+            self.status = .info("Select a key first")
+            return
+        }
+        guard let point = self.devices.first(where: { $0.identifier == self.selectedDeviceID }) else {
+            self.status = .info("Select a reader first")
+            return
+        }
 
         self.isConnecting = true
-        self.accessResult = nil
-        self.statusMessage = "Підключення..."
+        self.status = .info("Connecting to \(point.demoTitle)…")
 
-        self.bleService.connect(
-            to: point,
-            key: key,
-            completion: { [weak self] result in
-                Task { @MainActor in
-                    guard let self else { return }
-                    self.isConnecting = false
-                    self.accessResult = result
-                    self.statusMessage = self.message(for: result)
-                }
+        self.bleService.connect(to: point, key: key) { [weak self] result in
+            Task { @MainActor in
+                guard let self else { return }
+                self.isConnecting = false
+                self.status = result.status
             }
-        )
+        }
     }
 
     func selectKey(_ id: UUID) {
@@ -119,6 +127,8 @@ final class ManualDemoViewModel: ObservableObject {
         self.selectedDeviceID = id
     }
 
+    // MARK: - Private Methods
+
     private var selectedKey: AccessKey? {
         guard let id = self.selectedKeyID else { return nil }
         return self.keys.first(where: { $0.id == id })
@@ -127,55 +137,8 @@ final class ManualDemoViewModel: ObservableObject {
     private func loadKeys() async {
         let list = await self.keysService.getKeys()
         self.keys = list
-        if self.selectedKeyID == nil {
-            self.selectedKeyID = list.first?.id
-        }
-    }
-
-    @MainActor
-    private func handleDesktopResult(_ result: RequestKeyFromDesktopReaderResult) async {
-        self.isRequestingDesktop = false
-        self.desktopResult = result
-        self.statusMessage = self.message(for: result)
-        if result == .success {
-            await self.loadKeys()
-        }
-    }
-
-    func message(for result: RequestAccessResult) -> String {
-        switch result {
-        case .granted: return "Доступ надано"
-        case .accepted: return "Запит прийнято"
-        case .denied: return "Доступ відхилено"
-        case .timeout: return "Час очікування вийшов"
-        case .noAccessKeyForReader: return "Немає ключа для цього рідера"
-        case .bluetoothPowerOff: return "Bluetooth вимкнено"
-        case .unidentified: return "Невідомий статус"
-        case .error: return "Помилка з’єднання"
-        default: return "Невідома помилка"
-        }
-    }
-
-    func message(for result: RequestKeyFromDesktopReaderResult) -> String {
-        switch result {
-        case .success: return "Ключ додано з desktop рідера"
-        case .rejected: return "Відмовлено рідером"
-        case .keyTypeAlreadyExists: return "Такий ключ вже існує"
-        case .noKeyLeft: return "Немає ключів"
-        case .noMasterCard: return "Покладіть мастер-карту"
-        case .bluetoothPowerOff: return "Bluetooth вимкнено"
-        case .unknown: return "Невідомий статус"
-        default: return "Невідома помилка"
-        }
-    }
-
-    func message(for result: RequestKeyFromServerResult) -> String {
-        switch result {
-        case .success: return "Ключ додано за QR"
-        case .rejected: return "QR відхилено"
-        case .keyTypeAlreadyExists: return "Такий ключ вже існує"
-        case let .unknown(error): return error.localizedDescription
-        default: return "Невідома помилка"
+        if self.selectedKeyID == nil || !list.contains(where: { $0.id == self.selectedKeyID }) {
+            self.selectedKeyID = list.first(where: { $0.isKeySelected })?.id ?? list.first?.id
         }
     }
 }

@@ -9,62 +9,51 @@
 #import "DisplayManager.h"
 #import <notify.h>
 
-@interface DisplayManager ()
-
-@end
-
+static int kDisplayStatusToken = NOTIFY_TOKEN_INVALID;
 
 @implementation DisplayManager
-
-#pragma mark - Class Methods (Public)
-
-#pragma mark - Class Methods (Private)
-
-#pragma mark - Init & Dealloc
-
-#pragma mark - Setters (Public)
-
-#pragma mark - Getters (Public)
-
-#pragma mark - Setters (Private)
-
-#pragma mark - Getters (Private)
-
-#pragma mark - Lifecycle
-
-#pragma mark - Create Views & Variables
-
-#pragma mark - Actions
-
-#pragma mark - Notifications
-
-#pragma mark - Gestures
-
-#pragma mark - Delegates ()
 
 #pragma mark - Methods (Public)
 
 + (void)methodStart
 {
-    int notify_token;
-    notify_register_dispatch("com.apple.iokit.hid.displayStatus", &notify_token, dispatch_get_global_queue(0, 0), ^(int token)
-    {
-        uint64_t state = UINT64_MAX;
-        notify_get_state(token, &state);
-        if (state == 1)
-        {
-            [[NSNotificationCenter defaultCenter] postNotificationName:keyNotifDisplayOn object:nil];
+    @synchronized (self) {
+        if (kDisplayStatusToken != NOTIFY_TOKEN_INVALID) {
+            return;
         }
-        else
+
+        uint32_t status = notify_register_dispatch(
+            "com.apple.iokit.hid.displayStatus",
+            &kDisplayStatusToken,
+            dispatch_get_global_queue(QOS_CLASS_UTILITY, 0),
+            ^(int token)
         {
-            [[NSNotificationCenter defaultCenter] postNotificationName:keyNotifDisplayOff object:nil];
+            uint64_t state = UINT64_MAX;
+            notify_get_state(token, &state);
+            NSString *name = (state == 1) ? keyNotifDisplayOn : keyNotifDisplayOff;
+
+            // The Darwin callback runs on a global queue. Re-post on the main
+            // queue so observers can safely touch UIKit and shared state.
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [[NSNotificationCenter defaultCenter] postNotificationName:name object:nil];
+            });
+        });
+
+        if (status != NOTIFY_STATUS_OK) {
+            kDisplayStatusToken = NOTIFY_TOKEN_INVALID;
         }
-    });
+    }
 }
 
-#pragma mark - Methods (Private)
-
-#pragma mark - Standard Methods
++ (void)methodStop
+{
+    @synchronized (self) {
+        if (kDisplayStatusToken == NOTIFY_TOKEN_INVALID) {
+            return;
+        }
+        notify_cancel(kDisplayStatusToken);
+        kDisplayStatusToken = NOTIFY_TOKEN_INVALID;
+    }
+}
 
 @end
-

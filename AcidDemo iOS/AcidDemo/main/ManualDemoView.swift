@@ -6,221 +6,136 @@
 //
 
 import SwiftUI
-import u_prox_id_lib
 
 struct ManualDemoView: View {
+
     @ObservedObject var viewModel: ManualDemoViewModel
-    @State private var showScanner: Bool = false
-    
+    @State private var isShowingScanner: Bool = false
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                self.powerCorrectionSection()
-                Divider()
+            VStack(spacing: 16) {
                 self.addKeySection()
-                Divider()
                 self.keysSection()
-                Divider()
                 self.discoverySection()
-                Divider()
                 self.connectionSection()
-                self.statusSection()
+                self.settingsSection()
             }
-            .padding()
+            .padding(.horizontal)
+            .padding(.bottom, 24)
         }
-        .onAppear {
-            self.viewModel.onAppear()
-        }
-        .sheet(isPresented: self.$showScanner, onDismiss: {
-            self.viewModel.onAppear()
-        }) {
+        .onAppear { self.viewModel.onAppear() }
+        .sheet(isPresented: self.$isShowingScanner, onDismiss: { self.viewModel.onAppear() }) {
             QrScannerView()
         }
     }
-    
+
     // MARK: - Sections
-    
-    @ViewBuilder
-    private func powerCorrectionSection() -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Power correction: \(String(format: "%.1f", self.viewModel.powerCorrection))")
-                .font(.headline)
-            Slider(
-                value: .init(
-                    get: { self.viewModel.powerCorrection },
-                    set: { self.viewModel.updatePowerCorrection($0) }
-                ),
-                in: 0.2...1.6,
-                step: 0.1
-            )
-        }
-    }
-    
+
     @ViewBuilder
     private func addKeySection() -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Додати ключ")
-                .font(.headline)
-            
-            HStack {
-                self.actionButton(
+        DemoSection(
+            title: "1 · Add a key",
+            subtitle: "From a desktop reader over BLE, or from a QR code."
+        ) {
+            HStack(spacing: 10) {
+                DemoButton(
                     title: "Desktop",
-                    isLoading: self.viewModel.isRequestingDesktop,
-                    action: { self.viewModel.requestDesktopKey() }
-                )
-                
-                self.actionButton(
-                    title: "QR scanner",
-                    isLoading: false,
-                    action: { self.showScanner = true }
-                )
-            }
-            if let result = self.viewModel.desktopResult {
-                self.resultLabel(self.viewModel.message(for: result))
+                    systemImage: "dot.radiowaves.left.and.right",
+                    style: .secondary,
+                    isLoading: self.viewModel.isRequestingDesktop
+                ) {
+                    self.viewModel.requestDesktopKey()
+                }
+
+                DemoButton(
+                    title: "QR code",
+                    systemImage: "qrcode.viewfinder",
+                    style: .secondary
+                ) {
+                    self.isShowingScanner = true
+                }
             }
         }
     }
-    
+
     @ViewBuilder
     private func keysSection() -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Список ключів")
-                .font(.headline)
-            
+        DemoSection(title: "2 · Pick a key") {
             if self.viewModel.keys.isEmpty {
-                Text("Ключів немає")
+                EmptyHint(text: "No keys yet — add one in step 1.")
             } else {
                 ForEach(self.viewModel.keys, id: \.id) { key in
-                    let isSelected = key.id == self.viewModel.selectedKeyID
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(key.displayedName.isEmpty ? "Без назви" : key.displayedName)
-                            Text("Тип: \(key.keyType)")
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        if isSelected {
-                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                        }
-                    }
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 8).stroke(isSelected ? Color.green : Color.gray.opacity(0.3)))
-                    .contentShape(Rectangle())
-                    .onTapGesture {
+                    SelectionRow(
+                        title: key.demoTitle,
+                        subtitle: key.demoSubtitle,
+                        isSelected: key.id == self.viewModel.selectedKeyID
+                    ) {
                         self.viewModel.selectKey(key.id)
                     }
                 }
             }
         }
     }
-    
+
     @ViewBuilder
     private func discoverySection() -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Пошук девайсів")
-                    .font(.headline)
-                Spacer()
-                if self.viewModel.isSearchingDevices {
-                    ProgressView()
-                }
+        DemoSection(
+            title: "3 · Find a reader",
+            accessory: self.viewModel.isSearchingDevices ? AnyView(ProgressView()) : nil
+        ) {
+            DemoButton(
+                title: self.viewModel.isSearchingDevices ? "Scanning…" : "Scan",
+                systemImage: "antenna.radiowaves.left.and.right",
+                style: .secondary,
+                isLoading: self.viewModel.isSearchingDevices
+            ) {
+                self.viewModel.searchDevices()
             }
-            
-            self.actionButton(
-                title: self.viewModel.isSearchingDevices ? "Сканування..." : "Пошук",
-                isLoading: self.viewModel.isSearchingDevices,
-                action: { self.viewModel.searchDevices() }
-            )
-            
-            if self.viewModel.devices.isEmpty && !self.viewModel.isSearchingDevices {
-                Text("Натисніть \"Пошук\" щоб знайти рідери поблизу.")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
+
+            if self.viewModel.devices.isEmpty {
+                if !self.viewModel.isSearchingDevices {
+                    EmptyHint(text: "Tap Scan to look for readers nearby.")
+                }
             } else {
                 ForEach(self.viewModel.devices, id: \.identifier) { device in
-                    let isSelected = device.identifier == self.viewModel.selectedDeviceID
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(device.name.isEmpty ? "Без імені" : device.name)
-                            Text(device.identifier.uuidString)
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        if isSelected {
-                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                        }
-                    }
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 8).stroke(isSelected ? Color.green : Color.gray.opacity(0.3)))
-                    .contentShape(Rectangle())
-                    .onTapGesture {
+                    SelectionRow(
+                        title: device.demoTitle,
+                        subtitle: device.demoSubtitle,
+                        isSelected: device.identifier == self.viewModel.selectedDeviceID
+                    ) {
                         self.viewModel.selectDevice(device.identifier)
                     }
                 }
             }
         }
     }
-    
+
     @ViewBuilder
     private func connectionSection() -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Підключення та передача ключа")
-                .font(.headline)
-            
-            self.actionButton(
-                title: self.viewModel.isConnecting ? "З’єднання..." : "Підключити і передати",
+        DemoSection(
+            title: "4 · Connect and send the key",
+            subtitle: "Needs a key from step 2 and a reader from step 3."
+        ) {
+            DemoButton(
+                title: self.viewModel.isConnecting ? "Connecting…" : "Connect and send",
+                systemImage: "lock.open",
                 isLoading: self.viewModel.isConnecting,
-                isDisabled: self.viewModel.selectedKeyID == nil || self.viewModel.selectedDeviceID == nil,
-                action: { self.viewModel.connectSelected() }
-            )
-            
-            if let result = self.viewModel.accessResult {
-                self.resultLabel(self.viewModel.message(for: result))
+                isEnabled: self.viewModel.canConnect
+            ) {
+                self.viewModel.connectSelected()
+            }
+
+            if let status = self.viewModel.status {
+                StatusBanner(status: status)
             }
         }
     }
-    
+
     @ViewBuilder
-    private func statusSection() -> some View {
-        if !self.viewModel.statusMessage.isEmpty {
-            Text(self.viewModel.statusMessage)
-                .font(.footnote)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+    private func settingsSection() -> some View {
+        DemoSection(title: "Settings") {
+            PowerCorrectionSlider(value: self.$viewModel.powerCorrection)
         }
-    }
-    
-    // MARK: - Helpers
-    
-    @ViewBuilder
-    private func actionButton(
-        title: String,
-        isLoading: Bool = false,
-        isDisabled: Bool = false,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack {
-                if isLoading {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                }
-                Text(title).foregroundColor(.white)
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(RoundedRectangle(cornerRadius: 10).fill(isDisabled ? Color.gray : Color.blue))
-        }
-        .disabled(isDisabled || isLoading)
-    }
-    
-    @ViewBuilder
-    private func resultLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.footnote)
-            .foregroundColor(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

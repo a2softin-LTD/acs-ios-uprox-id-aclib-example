@@ -60,7 +60,6 @@ struct Storage<T: Codable> {
                 if let userDefaults = UserDefaults(suiteName: suite) {
                     let data = try? JSONEncoder().encode(newValue)
                     userDefaults.set(data, forKey: key)
-                    userDefaults.synchronize()
                 }
             }
         }
