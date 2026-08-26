@@ -6,167 +6,147 @@
 //  Copyright © 2020 Yevhen Khyzhniak. All rights reserved.
 //
 
-import u_prox_id_lib
 @preconcurrency import Combine
 import Foundation
+import u_prox_id_lib
 
+/// Drives the "Standard" tab: the library picks the reader and the key on its own.
 @MainActor
 final class MainViewModel: ObservableObject {
-    
+
     // MARK: - Properties
-    
+
     @Published private(set) var keys: [AccessKey] = []
-    @Published var initialKeyIndex: Int = 0
-    
-    @Published var powerCorrection: Double = 0.0
-    @Published var turnOnDisplay: Bool = false
-    @Published var handsFreeMode: Bool = false
-    
-    @Published var showMessage: Bool = false
-    @Published var inProcessOpen: Bool = false
-    @Published var inProcessGetKey: Bool = false
-    @Published private(set) var message: String = ""
-    
+    @Published var selectedKeyIndex: Int = 0
+
+    @Published var powerCorrection: Double
+    @Published var turnOnDisplay: Bool
+    @Published var handsFreeMode: Bool
+
+    @Published private(set) var status: DemoStatus?
+    @Published private(set) var isOpeningDoor: Bool = false
+    @Published private(set) var isRequestingKey: Bool = false
+
     // MARK: - Private Properties
-    
-    private var bleService: BluetoothService
+
+    private var bleService: BluetoothService = .init()
+    private let keysService: AccessKeysService = .init()
     private var bag: Set<AnyCancellable> = []
-    private let keysService: AccessKeysService
-    
-    @MainActor
+
     init() {
-        self.bleService = BluetoothService.init()
         self.powerCorrection = AppPreferences.powerCorrection
         self.turnOnDisplay = AppPreferences.turnByScreenMode
         self.handsFreeMode = AppPreferences.handsFreeMode
-        self.keysService = .init()
-        
-        self.powerCorrectionChecker
+        self.bleService.powerCorrection = AppPreferences.powerCorrection
+
+        // Persist the slider, otherwise the background worker keeps using the
+        // previous value — it reads `AppPreferences`, not this view model.
+        self.$powerCorrection
+            .dropFirst()
+            .removeDuplicates()
+            .debounce(for: 0.3, scheduler: RunLoop.main)
             .sink { [weak self] value in
+                AppPreferences.powerCorrection = value
                 self?.bleService.powerCorrection = value
             }
             .store(in: &self.bag)
-        
-        self.turnOnDisplayChecker
-            .sink {
-                AppPreferences.turnByScreenMode = $0
-            }
-            .store(in: &self.bag)
-        
-        self.handsFreeModeChecker
-            .sink {
-                AppPreferences.handsFreeMode = $0
-            }
-            .store(in: &self.bag)
-        
-        self.$initialKeyIndex
+
+        self.$turnOnDisplay
+            .dropFirst()
             .removeDuplicates()
-            .debounce(for: 1.0, scheduler: RunLoop.main)
-            .sink { [weak self] newValue in
-                guard let self = self else { return }
-                self.actualizeSelectedKeyOnStorage()
+            .sink { value in
+                AppPreferences.turnByScreenMode = value
+                BackgroundOpenDoorService.onRefresh()
+            }
+            .store(in: &self.bag)
+
+        self.$handsFreeMode
+            .dropFirst()
+            .removeDuplicates()
+            .sink { value in
+                AppPreferences.handsFreeMode = value
+                BackgroundOpenDoorService.onRefresh()
+            }
+            .store(in: &self.bag)
+
+        self.$selectedKeyIndex
+            .dropFirst()
+            .removeDuplicates()
+            .debounce(for: 0.5, scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.storeSelectedKey()
             }
             .store(in: &self.bag)
     }
-    
-    deinit {
-        self.bag.removeAll()
-    }
-    
+
     // MARK: - Public Methods
-    
-    public func getAccessKeys() {
-        Task { @MainActor in
-            await self.actualizeAccessKeys()
-        }
+
+    func getAccessKeys() {
+        Task { await self.actualizeAccessKeys() }
     }
-    
-    public func openDoor() {
-        guard !self.inProcessOpen else { return }
-        self.inProcessOpen = true
+
+    func openDoor() {
+        guard !self.isOpeningDoor else { return }
+        guard let key = self.selectedKey else {
+            self.status = .info("Add a key first — the list above is empty.")
+            return
+        }
+
+        self.isOpeningDoor = true
+        self.status = .info("Looking for a reader…")
         self.bleService.powerCorrection = self.powerCorrection
-        if let key = self.getCurrentSelectedKey() {
-            self.bleService.requestAccess(keyID: key.id) { [weak self] result in
-                Task { @MainActor in
-                    guard let self else { return }
-                    self.inProcessOpen = false
-                    self.showMessage = true
-                    self.message = "\(result)"
-                    print(result)
-                }
+
+        self.bleService.requestAccess(keyID: key.id) { [weak self] result in
+            Task { @MainActor in
+                guard let self else { return }
+                self.isOpeningDoor = false
+                self.status = result.status
             }
-        } else {
-            self.inProcessOpen = false
         }
     }
-    
-    public func getKeyRequest() {
-        self.inProcessGetKey = true
-        
+
+    func getKeyRequest() {
+        guard !self.isRequestingKey else { return }
+        self.isRequestingKey = true
+        self.status = .info("Waiting for a desktop reader…")
+
         self.bleService.requestKeyFromDesktopReader { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
                 if result == .success {
                     await self.actualizeAccessKeys()
                 }
-                self.inProcessGetKey = false
-                self.showMessage = true
-                self.message = "\(result)"
+                self.isRequestingKey = false
+                self.status = result.status
             }
         }
     }
-    
+
+    func selectKey(at index: Int) {
+        guard self.keys.indices.contains(index) else { return }
+        self.selectedKeyIndex = index
+    }
+
     // MARK: - Private Methods
-    
+
     private func actualizeAccessKeys() async {
         let list = await self.keysService.getKeys()
-        let initialKeyIndex = self.calculateInitialSelectedKeyIndex(list)
-        self.initialKeyIndex = initialKeyIndex
         self.keys = list
+        self.selectedKeyIndex = list.firstIndex(where: { $0.isKeySelected }) ?? 0
     }
-    
-    private func getCurrentSelectedKey() -> AccessKey? {
-        guard !keys.isEmpty else { return nil }
-        guard self.initialKeyIndex <= keys.count - 1 else { return nil }
-        return keys[self.initialKeyIndex]
+
+    private var selectedKey: AccessKey? {
+        guard self.keys.indices.contains(self.selectedKeyIndex) else { return nil }
+        return self.keys[self.selectedKeyIndex]
     }
-    
-    private func actualizeSelectedKeyOnStorage() {
-        guard let currentKey = self.getCurrentSelectedKey() else { return }
+
+    /// Makes the tapped key the one the library uses for background unlocks.
+    private func storeSelectedKey() {
+        // Already the default (e.g. right after a reload) — nothing to write.
+        guard let key = self.selectedKey, !key.isKeySelected else { return }
         let keysService = self.keysService
         Task.detached(priority: .background) {
-            await keysService.setDefaultAccessKey(currentKey)
+            await keysService.setDefaultAccessKey(key)
         }
-    }
-    
-    private func calculateInitialSelectedKeyIndex(_ list: [AccessKey]) -> Int {
-        guard !list.isEmpty else { return 0 }
-        if let index = list.firstIndex(where: {$0.isKeySelected}) {
-            return index
-        }
-        return 0
-    }
-    
-    // MARK: - Private Computed Properties
-    
-    private var powerCorrectionChecker: AnyPublisher<Double, Never> {
-        self.$powerCorrection
-            .debounce(for: 1.0, scheduler: RunLoop.main)
-            .removeDuplicates()
-            .eraseToAnyPublisher()
-    }
-    
-    private var turnOnDisplayChecker: AnyPublisher<Bool, Never> {
-        self.$turnOnDisplay
-            .debounce(for: 1.0, scheduler: RunLoop.main)
-            .removeDuplicates()
-            .eraseToAnyPublisher()
-    }
-    
-    private var handsFreeModeChecker: AnyPublisher<Bool, Never> {
-        self.$handsFreeMode
-            .debounce(for: 1.0, scheduler: RunLoop.main)
-            .removeDuplicates()
-            .eraseToAnyPublisher()
     }
 }

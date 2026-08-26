@@ -6,69 +6,109 @@
 //  Copyright © 2020 Yevhen Khyzhniak. All rights reserved.
 //
 
-//import Firebase
-//import FirebaseMessaging
 import UIKit
 import UserNotifications
 import u_prox_id_lib
 
+/// Wraps a non-`Sendable` value so it can be handed to a detached task.
+/// The payloads below are only read once, from a single task, so this is safe.
+private struct UncheckedSendableBox<Value>: @unchecked Sendable {
+    let value: Value
+}
+
 @main
-class AppDelegate: UIResponder, UIApplicationDelegate {
-    
-    lazy private var remoteNotifications: RemoteNotification = .init(
-        token: AppPreferences.firebaseToken,
+final class AppDelegate: UIResponder, UIApplicationDelegate {
+
+    /// Push token used by the library to talk to the key server.
+    ///
+    /// The demo registers with APNs directly. A production app that uses
+    /// Firebase Cloud Messaging would feed the FCM registration token here
+    /// instead (see `Messaging.messaging().fcmToken`).
+    private var remoteNotifications: RemoteNotification = .init(
+        token: AppPreferences.pushToken,
         env: .development
     )
-    
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        
         BackgroundOpenDoorService.onStart()
-        
         self.configurateAppleNotification(application)
         return true
     }
-    
+
     // MARK: UISceneSession Lifecycle
-    
+
     func application(
-        _ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession,
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
         options: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {
-        // Called when a new scene session is being created.
-        // Use this method to select a configuration to create the new scene with.
-        return UISceneConfiguration(
-            name: "Default Configuration", sessionRole: connectingSceneSession.role)
+        UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
-    
-    fileprivate func configurateAppleNotification(_ application: UIApplication) {
-        application.applicationIconBadgeNumber = 0
-        UNUserNotificationCenter.current().delegate = self
-        
-        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-        UNUserNotificationCenter.current().requestAuthorization(
-            options: authOptions,
-            completionHandler: { _, _ in })
-        
+
+    // MARK: - Push notifications
+
+    private func configurateAppleNotification(_ application: UIApplication) {
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self
+        center.setBadgeCount(0)
+        center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            if let error {
+                print("Notification authorization failed: \(error.localizedDescription)")
+            } else if !granted {
+                print("Notification authorization denied by the user")
+            }
+        }
+
         application.registerForRemoteNotifications()
     }
-    
-}
 
-extension AppDelegate: UNUserNotificationCenterDelegate {
-    
     func application(
-        _ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+        AppPreferences.pushToken = token
+        self.remoteNotifications = .init(token: token, env: .development)
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: any Error
+    ) {
+        print("Remote notification registration failed: \(error.localizedDescription)")
+    }
+
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
-        Task {
-            var remoteNotifications = self.remoteNotifications
-            _ = await remoteNotifications.receive(userInfo)
-            completionHandler(.newData)
+        let payload = UncheckedSendableBox(value: userInfo)
+        let service = UncheckedSendableBox(value: self.remoteNotifications)
+        let finish = UncheckedSendableBox(value: completionHandler)
+
+        Task.detached(priority: .userInitiated) {
+            var notifications = service.value
+            let state = await notifications.receive(payload.value)
+            print("Remote notification handled: \(state)")
+
+            await MainActor.run { finish.value(.newData) }
         }
     }
 }
 
-extension RemoteNotification: @unchecked @retroactive Sendable {}
+// MARK: - UNUserNotificationCenterDelegate
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound, .badge])
+    }
+}

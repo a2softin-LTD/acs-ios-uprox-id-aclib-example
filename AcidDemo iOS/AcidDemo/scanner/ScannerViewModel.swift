@@ -6,65 +6,95 @@
 //  Copyright © 2020 Yevhen Khyzhniak. All rights reserved.
 //
 
-import u_prox_id_lib
-@preconcurrency import Combine
+import AVFoundation
 import Foundation
+import u_prox_id_lib
 
 @MainActor
 final class ScannerViewModel: ObservableObject {
 
-  @Published var showMessage: Bool = false
-  @Published var message: String = ""
-
-  public func handleScan(result: Result<String, CodeScannerView.ScanError>) {
-    switch result {
-    case .success(let data):
-      self.sendCode(data)
-    case .failure(let error):
-      print("Scanning failed \(error)")
+    enum CameraState {
+        case unknown
+        case authorized
+        case denied
     }
-  }
 
-  private func sendCode(_ code: String) {
-    let token = AppPreferences.firebaseToken
+    @Published private(set) var cameraState: CameraState = .unknown
+    @Published private(set) var status: DemoStatus?
+    @Published private(set) var isSending: Bool = false
+    /// Set once the server has issued a key — the sheet closes on this.
+    @Published private(set) var didIssueKey: Bool = false
 
-    Task { [weak self] in
-      guard let self else { return }
+    private var handledCode: String?
 
-      let statusMessage = await Task.detached(priority: .userInitiated) { [token, code] in
-        let networker = NetworkService(env: .development)
-        networker.setConfig(
-          .init(
-            token: token,
-            baseTimeKeyServerUrl: "",
-            basePermanentKeyServerUrl: "",
-            applicationName: "UPROX" // If you need to set a new application name
-          )
-        )
+    // MARK: - Camera
 
-        do {
-          let result = try await networker.sendCodeToGetAnAccessKey(code)
-          switch result {
-          case .keyTypeAlreadyExists:
-            return "The key is not issued due this type of already exists in the application."
-          case .rejected:
-            return "The key is not issued due to reject by a remote server"
-          case .success:
-            return "The key is successfully issued by a remote server."
-          case .unknown(let error):
-            return error.localizedDescription
-          default:
-            return "Unknown error"
-          }
-        } catch let error as AppError {
-          return error.localizedDescription
-        } catch {
-          return error.localizedDescription
+    func requestCameraAccess() async {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            self.cameraState = .authorized
+        case .notDetermined:
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            self.cameraState = granted ? .authorized : .denied
+        default:
+            self.cameraState = .denied
         }
-      }.value
-
-      self.showMessage = true
-      self.message = statusMessage
     }
-  }
+
+    // MARK: - Scanning
+
+    func handleScan(result: Result<String, CodeScannerView.ScanError>) {
+        switch result {
+        case .success(let code):
+            self.sendCode(code)
+        case .failure(let error):
+            self.status = .failure("Scanning failed: \(error)")
+        }
+    }
+
+    private func sendCode(_ code: String) {
+        // The capture session can report the same code more than once.
+        guard !self.isSending, self.handledCode != code else { return }
+        self.handledCode = code
+        self.isSending = true
+        self.status = .info("Sending the code to the server…")
+
+        let token = AppPreferences.pushToken
+
+        Task { [weak self] in
+            let result = await Self.requestKey(code: code, token: token)
+
+            guard let self else { return }
+            self.isSending = false
+            self.status = result
+            if result.kind == .success {
+                self.didIssueKey = true
+            } else {
+                // Let the user try again with another code.
+                self.handledCode = nil
+            }
+        }
+    }
+
+    private static func requestKey(code: String, token: String) async -> DemoStatus {
+        await Task.detached(priority: .userInitiated) {
+            let networker = NetworkService(env: .development)
+            networker.setConfig(
+                .init(
+                    token: token,
+                    baseTimeKeyServerUrl: "",
+                    basePermanentKeyServerUrl: "",
+                    applicationName: "UPROX"  // set this if you need a custom application name
+                )
+            )
+
+            do {
+                return try await networker.sendCodeToGetAnAccessKey(code).status
+            } catch let error as AppError {
+                return .failure(error.localizedDescription)
+            } catch {
+                return .failure(error.localizedDescription)
+            }
+        }.value
+    }
 }

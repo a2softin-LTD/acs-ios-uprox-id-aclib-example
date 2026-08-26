@@ -16,17 +16,6 @@
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.807682397895-dfdoss4iih5cvgds76q06lef9ca85m8m</string>
-			</array>
-		</dict>
-	</array>
 	<key>CFBundleVersion</key>
 	<string>1.10</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -37,15 +26,15 @@
 		<true/>
 	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>bluetooth</string>
+	<string>AcidDemo talks to u-prox readers over Bluetooth to open doors.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>bluetooth</string>
+	<string>AcidDemo talks to u-prox readers over Bluetooth to open doors.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>camera</string>
+	<string>AcidDemo uses the camera to scan the QR code that issues an access key.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>location</string>
+	<string>AcidDemo needs background location to open doors in hands free mode while the app is not on screen.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>location</string>
+	<string>AcidDemo uses your location to detect the iBeacon next to a door.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -74,7 +63,7 @@
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>

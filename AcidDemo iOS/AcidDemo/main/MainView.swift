@@ -9,206 +9,156 @@
 import SwiftUI
 
 struct MainView: View {
-    
+
     enum DemoTab: String, CaseIterable, Identifiable {
-        case standard = "Стандарт"
+        case standard = "Standard"
         case manual = "Manual"
-        
+
         var id: String { self.rawValue }
     }
-    
+
     @State private var selectedTab: DemoTab = .standard
+    @State private var isShowingLogs: Bool = false
     @StateObject private var standardViewModel: MainViewModel = .init()
     @StateObject private var manualViewModel: ManualDemoViewModel = .init()
-    
+
     var body: some View {
-        VStack {
-            Picker("Demo", selection: self.$selectedTab) {
-                ForEach(DemoTab.allCases) { tab in
-                    Text(tab.rawValue).tag(tab)
+        NavigationStack {
+            VStack(spacing: 0) {
+                Picker("Demo", selection: self.$selectedTab) {
+                    ForEach(DemoTab.allCases) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.bottom, 12)
+
+                switch self.selectedTab {
+                case .standard:
+                    StandardDemoView(viewModel: self.standardViewModel)
+                case .manual:
+                    ManualDemoView(viewModel: self.manualViewModel)
                 }
             }
-            .pickerStyle(.segmented)
-            .padding()
-            
-            switch self.selectedTab {
-            case .standard:
-                StandardDemoView(viewModel: self.standardViewModel)
-            case .manual:
-                ManualDemoView(viewModel: self.manualViewModel)
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("u-prox ID")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        self.isShowingLogs = true
+                    } label: {
+                        Label("Logs", systemImage: "text.alignleft")
+                    }
+                }
+            }
+            .sheet(isPresented: self.$isShowingLogs) {
+                NavigationStack {
+                    TracerView()
+                }
             }
         }
     }
 }
 
+// MARK: - Standard demo
+
+/// Everything is handled by the library: it finds the nearest reader and picks
+/// the key that matches it.
 private struct StandardDemoView: View {
-    enum ShowingType: Int, Identifiable {
-        case openScanning = 1
-        case logs = 2
-        
-        var id: Int { self.rawValue }
-    }
-    
+
     @ObservedObject var viewModel: MainViewModel
-    @State private var onShow: ShowingType? = nil
-    
+    @State private var isShowingScanner: Bool = false
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                self.settingsSection()
-                Divider()
+            VStack(spacing: 16) {
                 self.keysSection()
-                Divider()
                 self.actionsSection()
-                Divider()
-                self.scannerSection()
+                self.settingsSection()
             }
-            .padding()
+            .padding(.horizontal)
+            .padding(.bottom, 24)
         }
-        .overlay(
-            self.logsButtonView().padding(),
-            alignment: .bottomTrailing
-        )
-        .sheet(item: self.$onShow) { item in
-            switch item {
-            case .openScanning:
-                QrScannerView()
-                    .onDisappear {
-                        self.viewModel.getAccessKeys()
-                    }
-            case .logs:
-                TracerView()
-            }
+        .sheet(isPresented: self.$isShowingScanner) {
+            QrScannerView()
+                .onDisappear { self.viewModel.getAccessKeys() }
         }
-        .alert(isPresented: self.$viewModel.showMessage) { () -> Alert in
-            Alert(
-                title: Text("Result"),
-                message: Text(self.viewModel.message),
-                dismissButton: .cancel())
-        }
-        .onAppear {
-            self.viewModel.getAccessKeys()
-        }
+        .onAppear { self.viewModel.getAccessKeys() }
     }
-    
+
     // MARK: - Sections
-    
-    @ViewBuilder
-    private func settingsSection() -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Налаштування")
-                .font(.headline)
-            Toggle(
-                "Turn on display - \(self.viewModel.turnOnDisplay ? "YES" : "NO")",
-                isOn: self.$viewModel.turnOnDisplay)
-            Toggle(
-                "Hands Free Mode - \(self.viewModel.handsFreeMode ? "YES" : "NO")",
-                isOn: self.$viewModel.handsFreeMode)
-            Text("Power correction: \(String(format: "%.1f", self.viewModel.powerCorrection))")
-                .font(.subheadline)
-            Slider(
-                value: self.$viewModel.powerCorrection,
-                in: 0.2...1.6,
-                step: 0.1
-            )
-        }
-    }
-    
-    @ViewBuilder
-    private func keysSection() -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Список ключів")
-                .font(.headline)
-            if self.viewModel.keys.isEmpty {
-                Text("Ключів немає")
-            } else {
-                ForEach(Array(self.viewModel.keys.enumerated()), id: \.element) { index, key in
-                    let isSelected = self.viewModel.initialKeyIndex == index
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(key.displayedName.isEmpty ? "Без назви" : key.displayedName)
-                            Text("Тип: \(key.keyType)")
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        if isSelected {
-                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                        }
-                    }
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 8).stroke(isSelected ? Color.green : Color.gray.opacity(0.3)))
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        self.viewModel.initialKeyIndex = index
-                    }
-                }
-            }
-        }
-    }
-    
+
     @ViewBuilder
     private func actionsSection() -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Дії")
-                .font(.headline)
-            self.actionButton(
-                title: "Get access key from reader",
-                isLoading: self.viewModel.inProcessGetKey
-            ) {
-                self.viewModel.getKeyRequest()
-            }
-            self.actionButton(
-                title: "Open Door",
-                isLoading: self.viewModel.inProcessOpen
+        DemoSection(
+            title: "2 · Open a door",
+            subtitle: "The library scans for readers and uses the selected key."
+        ) {
+            DemoButton(
+                title: "Open door",
+                systemImage: "lock.open",
+                isLoading: self.viewModel.isOpeningDoor
             ) {
                 self.viewModel.openDoor()
             }
-        }
-    }
-    
-    @ViewBuilder
-    private func scannerSection() -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Scanner")
-                .font(.headline)
-            self.actionButton(title: "Open Qr scanner") {
-                self.onShow = .openScanning
+
+            if let status = self.viewModel.status {
+                StatusBanner(status: status)
             }
         }
     }
-    
-    // MARK: - Helpers
-    
-    private func logsButtonView() -> some View {
-        Circle()
-            .frame(width: 50, height: 50)
-            .foregroundColor(.orange)
-            .overlay(Text("Logs"))
-            .onTapGesture {
-                self.onShow = .logs
-            }
-    }
-    
+
     @ViewBuilder
-    private func actionButton(
-        title: String,
-        isLoading: Bool = false,
-        isDisabled: Bool = false,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack {
-                if isLoading {
-                    ProgressView()
-                        .progressViewStyle(.circular)
+    private func keysSection() -> some View {
+        DemoSection(
+            title: "1 · Access keys",
+            subtitle: "Tap a key to make it the default one."
+        ) {
+            if self.viewModel.keys.isEmpty {
+                EmptyHint(text: "No keys yet. Add one from a desktop reader or by scanning a QR code.")
+            } else {
+                ForEach(Array(self.viewModel.keys.enumerated()), id: \.element.id) { index, key in
+                    SelectionRow(
+                        title: key.demoTitle,
+                        subtitle: key.demoSubtitle,
+                        isSelected: self.viewModel.selectedKeyIndex == index
+                    ) {
+                        self.viewModel.selectKey(at: index)
+                    }
                 }
-                Text(title).foregroundColor(.white)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(RoundedRectangle(cornerRadius: 10).fill(isDisabled ? Color.gray : Color.blue))
+
+            DemoButton(
+                title: "Get key from desktop reader",
+                systemImage: "dot.radiowaves.left.and.right",
+                style: .secondary,
+                isLoading: self.viewModel.isRequestingKey
+            ) {
+                self.viewModel.getKeyRequest()
+            }
+
+            DemoButton(
+                title: "Scan QR code",
+                systemImage: "qrcode.viewfinder",
+                style: .secondary
+            ) {
+                self.isShowingScanner = true
+            }
         }
-        .disabled(isDisabled || isLoading)
+    }
+
+    @ViewBuilder
+    private func settingsSection() -> some View {
+        DemoSection(
+            title: "Background unlock",
+            subtitle: "Both modes keep working while the app is in the background."
+        ) {
+            Toggle("Unlock on screen wake", isOn: self.$viewModel.turnOnDisplay)
+            Toggle("Hands free", isOn: self.$viewModel.handsFreeMode)
+            Divider()
+            PowerCorrectionSlider(value: self.$viewModel.powerCorrection)
+        }
     }
 }
